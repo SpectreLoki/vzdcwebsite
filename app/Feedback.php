@@ -2,18 +2,13 @@
 
 namespace App;
 
-use App\User;
-use GuzzleHttp\Client;
 use Illuminate\Database\Eloquent\Model;
-use SimpleXMLElement;
 
-class Feedback extends Model
-{
+class Feedback extends Model {
     protected $table = 'feedback';
     protected $fillable = ['id', 'controller_id', 'position', 'service_level', 'callsign', 'pilot_name', 'pilot_email', 'pilot_cid', 'comments', 'created_at', 'updated_at', 'status'];
 
-    public function getServiceLevelTextAttribute()
-    {
+    public function getServiceLevelTextAttribute() {
         $level = $this->service_level;
         if ($level == 0) {
             return 'Excellent';
@@ -32,11 +27,23 @@ class Feedback extends Model
         }
     }
 
-    public function getControllerNameAttribute()
-    {
-        $controller = User::find($this->controller_id);
+    public function getFeedbackIdAttribute() {
+        return $this->controller_id;
+    }
+
+    public function setFeedbackIdAttribute($value) {
+        $this->controller_id = $value;
+    }
+
+    public function getFeedbackNameAttribute() {
+        $controller = User::find($this->feedback_id);
+        $event = Event::find($this->feedback_id);
         if (isset($controller)) {
             $name = $controller->full_name;
+        } elseif (isset($event)) {
+            $name = $event->name;
+        } elseif ($this->feedback_id == 0) {
+            $name = 'General ATC Feedback';
         } else {
             $name = '[This controller is no longer a member]';
         }

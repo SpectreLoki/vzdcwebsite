@@ -43,10 +43,11 @@ OTS Center
                                 <td>{{ $o->recommended_on }}</td>
                                 <td>{{ $o->controller_name }}</td>
                                 <td>{{ $o->recommender_name }}</td>
-                                <td>{{ $o->facility_position }}</td>
+                                <td>{{ $o->position_name }}</td>
                                 <td>
                                     <a href="/dashboard/training/ots-center/accept/{{ $o->id }}" class="btn btn-success simple-tooltip" data-toggle="tooltip" title="Accept Recommendation"><i class="fas fa-check"></i></a>
-                                    @if(Auth::user()->can('snrStaff'))
+                                    <a href="/dashboard/training/tickets?id={{ $o->controller_id }}" class="btn btn-info simple-tooltip" data-toggle="tooltip" title="View Training Tickets."><i class="fas fa-check"></i></a>
+                                    @if(Auth::user()->isAbleTo('snrStaff'))
                                         <a href="/dashboard/training/ots-center/reject/{{ $o->id }}" class="btn btn-danger simple-tooltip" data-toggle="tooltip" title="Reject Recommendation"><i class="fas fa-times"></i></a>
                                         <span data-toggle="modal" data-target="#assign{{ $o->id }}">
                                             <button type="button" class="btn btn-success simple-tooltip" data-placement="top" data-toggle="tooltip" title="Assign to Instructor"><i class="fas fa-user-check"></i></button>
@@ -103,9 +104,9 @@ OTS Center
                                 <td>{{ $o->controller_name }}</td>
                                 <td>{{ $o->recommender_name }}</td>
                                 <td>{{ $o->ins_name }}</td>
-                                <td>{{ $o->facility_position }}</td>
+                                <td>{{ $o->position_name }}</td>
                                 <td>
-                                    @if($o->ins_id == Auth::id() || Auth::user()->can('snrStaff'))
+                                    @if($o->ins_id == Auth::id() || Auth::user()->isAbleTo('snrStaff'))
                                         <span data-toggle="modal" data-target="#completeOTS{{ $o->id }}">
                                             <button type="button" class="btn btn-success simple-tooltip" data-placement="top" data-toggle="tooltip" title="Set OTS as Complete"><i class="fas fa-check"></i></button>
                                         </span>
@@ -118,7 +119,7 @@ OTS Center
                                 <div class="modal-dialog" role="document">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Submit OTS Report</h5>
+                                            <h5 class="modal-title">Upload OTS Report</h5>
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                 <span aria-hidden="true">&times;</span>
                                             </button>
@@ -127,15 +128,11 @@ OTS Center
                                         @csrf
                                         <div class="modal-body">
                                             <div class="form-group">
-                                                <span class="text-danger">Submit to VATUSA first</span>
-                                                <br />
-                                                <a class="btn btn-primary" href="https://www.vatusa.net/mgt/controller/{{ $o->controller_id }}#training" target="_blank">VATUSA OTS Submission</a>
-                                            </div>
-                                            <div class="form-group">
-                                                <span class="text-danger">Next complete the OTS</span>
-                                                <br />
                                                 {!! Form::label('result', 'Result') !!}
                                                 {!! Form::select('result', [2 => 'Pass', 3 => 'Fail'], null, ['placeholder' => 'Select Result', 'class' => 'form-control']) !!}
+                                            </div>
+                                            <div class="form-group">
+                                                {!! Form::file('ots_report', ['class' => 'form-control']) !!}
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -173,12 +170,8 @@ OTS Center
                                 <td>{{ $o->controller_name }}</td>
                                 <td>{{ $o->recommender_name }}</td>
                                 <td>{{ $o->ins_name }}</td>
-                                <td>{{ $o->facility_position }}</td>
-                                <td>
-                                    {{ $o->result }}@if($o->result == 'Pass') <i class="fas fa-check"></i>@else <i class="fas fa-times"></i>@endif 
-                                    @if($o->report != null) <a href="{{ $o->report }}" target="_blank">(View Report)</a> <br /> @endif
-                                    <a href="https://www.vatusa.net/mgt/controller/{{ $o->controller_id }}#training" target="_blank">(View Training History)</a>
-                                </td>
+                                <td>{{ $o->position_name }}</td>
+                                <td>{{ $o->result }}@if($o->result == 'Pass') <i class="fas fa-check"></i>@else <i class="fas fa-times"></i>@endif <a href="{{ $o->report }}" target="_blank">(View Report)</a></td>
                             </tr>
                         @endforeach
                     @else

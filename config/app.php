@@ -154,6 +154,7 @@ return [
         /*
          * Package Service Providers...
          */
+        Torann\GeoIP\GeoIPServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -163,7 +164,12 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        Unisharp\Ckeditor\ServiceProvider::class,
+        // Unisharp\Ckeditor\ServiceProvider::class,
+
+        /*
+         * Custom Service Providers...
+         */
+        App\Providers\HelperServiceProvider::class,
 
     ],
 
@@ -216,6 +222,7 @@ return [
         'Form' => Collective\Html\FormFacade::class,
         'Html' => Collective\Html\HtmlFacade::class,
         'Laratrust'   => Laratrust\LaratrustFacade::class,
+        'GeoIP' => Torann\GeoIP\GeoIP::class,
 
     ],
 

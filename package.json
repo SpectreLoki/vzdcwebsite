@@ -1,45 +1,48 @@
 {
-  "private": true,
-  "scripts": {
-    "dev": "npm run development",
-    "development": "cross-env NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
-    "watch": "npm run development -- --watch",
-    "watch-poll": "npm run watch -- --watch-poll",
-    "hot": "cross-env NODE_ENV=development node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline --hot --config=node_modules/laravel-mix/setup/webpack.config.js",
-    "prod": "npm run production",
-    "production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --no-progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js"
-  },
-  "devDependencies": {
-    "axios": "^0.18",
-    "bootstrap": "^4.0.0",
-    "cross-env": "^5.1",
-    "jquery": "^3.2",
-    "laravel-mix": "^2.1.14",
-    "lodash": "^4.17.4",
-    "popper.js": "^1.12",
-    "vue": "^2.5.17",
-    "webpack-cli": "^3.2.1"
-  },
-  "name": "ztl-v2",
-  "description": "## Contributers: - Ian Cowan",
-  "version": "1.0.0",
-  "main": "webpack.mix.js",
-  "directories": {
-    "test": "tests"
-  },
-  "dependencies": {
-    "imagemin-pngquant": "^5.0.1",
-    "pngquant-bin": "^3.1.1",
-    "tempusdominus-bootstrap-4": "^5.1.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/iccowan/ztl-v2.git"
-  },
-  "author": "Ian Cowan",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/iccowan/ztl-v2/issues"
-  },
-  "homepage": "https://github.com/iccowan/ztl-v2#readme"
+    "private": true,
+    "scripts": {
+        "dev": "npm run development",
+        "development": "mix",
+        "watch": "mix watch",
+        "watch-poll": "mix watch -- --watch-options-poll=1000",
+        "hot": "mix watch --hot",
+        "prod": "npm run production",
+        "production": "mix --production",
+        "format": "npx prettier --write resources/assets/.",
+        "format-check": "npx prettier --check resources/assets/."
+    },
+    "devDependencies": {
+        "axios": "^0.27",
+        "laravel-mix": "^6.0.6",
+        "prettier": "^2.7.1",
+        "resolve-url-loader": "^5.0.0",
+        "sass": "^1.52.2",
+        "sass-loader": "^12.6.0"
+    },
+    "name": "ztl-v2",
+    "description": "## vZTL Website",
+    "version": "1.0.0",
+    "main": "webpack.mix.js",
+    "directories": {
+        "test": "tests"
+    },
+    "dependencies": {
+        "@ckeditor/ckeditor5-adapter-ckfinder": "^36.0.1",
+        "@ckeditor/ckeditor5-basic-styles": "^36.0.1",
+        "@ckeditor/ckeditor5-block-quote": "^36.0.1",
+        "@ckeditor/ckeditor5-dev-utils": "^35.0.3",
+        "@ckeditor/ckeditor5-dev-webpack-plugin": "^31.1.13",
+        "@ckeditor/ckeditor5-editor-classic": "^36.0.1",
+        "@ckeditor/ckeditor5-essentials": "^36.0.1",
+        "@ckeditor/ckeditor5-heading": "^36.0.1",
+        "@ckeditor/ckeditor5-horizontal-line": "^36.0.1",
+        "@ckeditor/ckeditor5-image": "^36.0.1",
+        "@ckeditor/ckeditor5-indent": "^36.0.1",
+        "@ckeditor/ckeditor5-link": "^36.0.1",
+        "@ckeditor/ckeditor5-list": "^36.0.1",
+        "@ckeditor/ckeditor5-media-embed": "^36.0.1",
+        "@ckeditor/ckeditor5-table": "^36.0.1",
+        "@ckeditor/ckeditor5-theme-lark": "^36.0.1",
+        "tempusdominus-bootstrap-4": "^5.39.2"
+    }
 }

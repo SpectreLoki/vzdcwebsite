@@ -16,6 +16,7 @@
 */
 Route::get('/', 'FrontController@home');
 Route::get('/controllers/teamspeak', 'FrontController@teamspeak');
+Route::get('/privacy', 'FrontController@privacy');
 Route::get('/controllers/stats/{year?}/{month?}', 'FrontController@showStats');
 Route::get('/visit', 'FrontController@visit');
 Route::post('/visit/save', 'FrontController@storeVisit');
@@ -28,11 +29,21 @@ Route::get('/pilots/scenery/view/{id}', 'FrontController@showScenery');
 Route::post('/pilots/scenery/search', 'FrontController@searchScenery');
 Route::get('/pilots/request-staffing', 'FrontController@showStaffRequest');
 Route::post('/pilots/request-staffing', 'FrontController@staffRequest');
+Route::get('/pilots/guide/atl', 'FrontController@pilotGuideAtl');
 Route::get('/feedback/new', 'FrontController@newFeedback');
+Route::get('/feedback/new/{slug}', 'FrontController@newFeedback');
 Route::post('/feedback/new', 'FrontController@saveNewFeedback');
 Route::get('controllers/files', 'FrontController@showFiles');
-Route::get('/pilots/privacy_policy', 'FrontController@showPrivacyPolicy');
-// Route::get('/controllers/files/download/{id}', 'FrontController@downloadFile');
+Route::get('/ramp-status/atl', 'FrontController@showAtlRamp');
+Route::get('/ramp-status/clt', 'FrontController@showCltRamp');
+Route::get('/asset/{slug}', 'FrontController@showPermalink');
+
+Route::prefix('realops')->middleware('toggle:realops')->group(function () {
+    Route::get('/', 'RealopsController@index');
+    Route::get('/login', 'Auth\LoginController@realopsLogin')->middleware('guest:realops');
+    Route::get('/bid/{id}', 'RealopsController@bid')->middleware('auth:realops')->middleware('toggle:realops_bidding');
+    Route::get('/cancel-bid', 'RealopsController@cancelBid')->middleware('auth:realops');
+});
 /*
 *   End Front Page Stuff
 */
@@ -42,9 +53,8 @@ Route::get('/pilots/privacy_policy', 'FrontController@showPrivacyPolicy');
 */
 Route::get('/controllers/roster', 'RosterController@index');
 Route::get('/controllers/staff', 'RosterController@staffIndex');
-Route::get('/login', 'Auth\LoginController@login')->middleware('guest')->name('login');   // Login
-Route::get('/logout', 'Auth\LoginController@logout')->middleware('auth')->name('logout'); // Logout
-
+Route::get('/login', 'Auth\LoginController@login')->name('login');
+Route::get('/logout', 'Auth\LoginController@logout')->name('logout');
 /*
 *   End Roster
 */
@@ -56,16 +66,15 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
     Route::get('/', 'ControllerDash@dash');
 
     Route::prefix('controllers')->group(function () {
-        Route::get('/teamspeak', 'ControllerDash@showTeamspeak');
         Route::get('/calendar/view/{id}', 'ControllerDash@showCalendarEvent');
         Route::get('/roster', 'ControllerDash@showRoster');
         Route::get('/files', 'ControllerDash@showFiles');
-        // Route::get('/files/download/{id}', 'ControllerDash@downloadFile');
         Route::get('/view-my-tickets', 'ControllerDash@showTickets');
         Route::get('/suggestions', 'ControllerDash@showSuggestions');
         Route::get('/atcast', 'ControllerDash@showatcast');
         Route::get('/stats/{year?}/{month?}', 'ControllerDash@showStats');
         Route::get('/profile', 'ControllerDash@showProfile');
+        Route::post('/profile', 'ControllerDash@updateInfo');
         Route::get('/ticket/{id}', 'ControllerDash@showTicket');
         Route::get('/profile/feedback-details/{id}', 'ControllerDash@showFeedbackDetails');
         Route::get('/events', 'ControllerDash@showEvents');
@@ -78,15 +87,9 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
         Route::post('/search-airport', 'ControllerDash@searchAirport');
         Route::get('/search-airport/search', 'ControllerDash@searchAirportResult');
         Route::post('/report-bug', 'ControllerDash@reportBug');
-        Route::get('/currency_hours', 'ControllerDash@showCurrency_Hours');
-        Route::get('/iron_mic', 'ControllerDash@showIron_Mic');
         Route::prefix('incident')->group(function () {
             Route::get('/report', 'ControllerDash@incidentReport');
             Route::post('/report', 'ControllerDash@submitIncidentReport');
-        });
-        Route::prefix('loa')->group(function () {
-            Route::get('/request', 'ControllerDash@LoaRequest');
-            Route::post('/submit', 'ControllerDash@SubmitLoaRequest');
         });
     });
 
@@ -97,6 +100,7 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
 
     Route::prefix('training')->group(function () {
         Route::get('atcast', 'TrainingDash@showatcast');
+        Route::get('/req', 'TrainingDash@ShowReq');
         Route::prefix('tickets')->middleware('permission:train')->group(function () {
             Route::get('/', 'TrainingDash@ticketsIndex');
             Route::post('/search', 'TrainingDash@searchTickets');
@@ -115,15 +119,20 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
             Route::get('/cancel/{id}', 'TrainingDash@otsCancel');
             Route::post('/complete/{id}', 'TrainingDash@completeOTS');
         });
-        Route::prefix('info')->middleware('permission:train')->group(function () {
+        Route::prefix('info')->group(function () {
             Route::get('/', 'TrainingDash@trainingInfo');
             Route::post('/add/{section}', 'TrainingDash@addInfo')->middleware('permission:snrStaff');
             Route::get('/delete/{id}', 'TrainingDash@deleteInfo')->middleware('permission:snrStaff');
+            Route::prefix('public')->middleware('permission:snrStaff')->group(function () {
+                Route::post('/new-section', 'TrainingDash@newPublicInfoSection');
+                Route::post('/edit-section/{id}', 'TrainingDash@editPublicSection');
+                Route::get('/remove-section/{id}', 'TrainingDash@removePublicInfoSection');
+                Route::post('/add-pdf/{id}', 'TrainingDash@addPublicPdf');
+                Route::get('/remove-pdf/{id}', 'TrainingDash@removePublicPdf');
+            });
         });
-        Route::prefix('feedback')->middleware('role:ins|atm|datm|ta|wm')->group(function () {
-            Route::get('/', 'TrainingDash@ViewFeedback');
-            Route::post('/search', 'TrainingDash@searchFeedback');
-        });
+        Route::get('/statistics', 'TrainingDash@statistics')->middleware('permission:snrStaff');
+        Route::get('/statistics/graph', 'TrainingDash@generateGraphs')->middleware('permission:snrStaff');
     });
 
     Route::prefix('admin')->group(function () {
@@ -134,14 +143,6 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
         Route::prefix('audits')->middleware('permission:snrStaff')->group(function () {
             Route::get('/', 'AdminDash@showAudits');
         });
-
-        Route::prefix('logs')->group(function () {
-            Route::post('/create/{id}', 'AdminDash@createLog');
-            Route::post('/delete/{id}', 'AdminDash@removeLog')->middleware('permission:snrStaff');
-            Route::post('/manual', 'AdminDash@createLogManual')->middleware('permission:snrStaff');
-            Route::post('/manual/{id}', 'AdminDash@createLogUser');
-        });
-
         Route::prefix('calendar')->middleware('permission:staff')->group(function () {
             Route::get('/', 'AdminDash@viewCalendar');
             Route::get('/view/{id}', 'AdminDash@viewCalendarEvent');
@@ -150,6 +151,7 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
             Route::get('/edit/{id}', 'AdminDash@editCalendarEvent');
             Route::post('/edit/{id}/save', 'AdminDash@saveCalendarEvent');
             Route::delete('/delete/{id}', 'AdminDash@deleteCalendarEvent');
+            Route::post('/edit/vis/{id}', 'AdminDash@toggleCalenderEventVisibilty');
         });
         Route::prefix('scenery')->middleware('permission:scenery')->group(function () {
             Route::get('/', 'AdminDash@showScenery');
@@ -163,9 +165,11 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
         Route::prefix('files')->middleware('permission:files')->group(function () {
             Route::get('/upload', 'AdminDash@uploadFile');
             Route::post('/upload', 'AdminDash@storeFile');
+            Route::post('/separator', 'AdminDash@fileSeparator');
             Route::get('/edit/{id}', 'AdminDash@editFile');
             Route::post('/edit/{id}', 'AdminDash@saveFile');
             Route::get('/delete/{id}', 'AdminDash@deleteFile');
+            Route::get('/disp-order', 'AdminDash@updateFileDispOrder');
         });
         Route::prefix('airports')->middleware('permission:staff')->group(function () {
             Route::get('/', 'AdminDash@showAirports');
@@ -187,11 +191,13 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
             Route::post('/edit/{id}', 'AdminDash@saveEvent');
             Route::get('/delete/{id}', 'AdminDash@deleteEvent');
             Route::get('/toggle-reg/{id}', 'AdminDash@toggleRegistration');
+            Route::get('/toggle-show-assignments/{id}', 'AdminDash@toggleShowAssignments')->middleware('toggle:event_assignment_toggle');
             Route::get('/set-active/{id}', 'AdminDash@setEventActive');
             Route::get('/hide/{id}', 'AdminDash@hideEvent');
             Route::post('/save-preset/{id}', 'AdminDash@setEventPositionPreset');
             Route::post('/load-preset/{id}', 'AdminDash@retrievePositionPreset');
             Route::post('/delete-preset', 'AdminDash@deletePositionPreset');
+            Route::get('/send-reminder/{id}', 'AdminDash@sendEventReminder');
         });
         Route::prefix('roster')->middleware('permission:roster')->group(function () {
             Route::get('/visit/requests', 'AdminDash@showVisitRequests');
@@ -202,14 +208,20 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
             Route::post('/visit/reject/{id}', 'AdminDash@rejectVisitRequest');
             Route::get('/visit/requests/view/{id}', 'AdminDash@viewVisitRequest');
             Route::get('/visit/remove/{id}', 'AdminDash@removeVisitor');
+            Route::get('/visit-agreement/reject/{id}', 'AdminDash@disallowVisitReq');
+            Route::post('/visit-agreement/permit', 'AdminDash@allowVisitReq');
             Route::get('/purge-assistant/{year?}/{month?}', 'AdminDash@showRosterPurge');
         });
-        Route::prefix('roster')->middleware('permission:roster|train')->group(function () {
+        Route::prefix('roster')->middleware('permission:roster|train|events')->group(function () {
             Route::get('/edit/{id}', 'AdminDash@editController');
             Route::post('/edit/{id}', 'AdminDash@updateController');
         });
+        Route::prefix('local-hero')->middleware('permission:snrStaff')->group(function () {
+            Route::post('/{year}/{month}/{hours}/{id}', 'AdminDash@setLocalHeroWinner');
+            Route::get('/remove/{id}/{year}/{month}', 'AdminDash@removeLocalHeroWinner');
+        });
         Route::prefix('bronze-mic')->middleware('permission:snrStaff')->group(function () {
-            Route::get('/{year?}/{month?}', 'AdminDash@showBronzeMic');
+            Route::get('/{sort?}/{year?}/{month?}/', 'AdminDash@showBronzeMic');
             Route::post('/{year}/{month}/{hours}/{id}', 'AdminDash@setBronzeWinner');
             Route::get('/remove/{id}/{year}/{month}', 'AdminDash@removeBronzeWinner');
         });
@@ -235,19 +247,24 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
             Route::get('/archive/{id}', 'AdminDash@archiveIncident');
             Route::get('/delete/{id}', 'AdminDash@deleteIncident');
         });
-        Route::prefix('dossier')->middleware('permission:staff')->group(function () {
-            Route::get('/', 'AdminDash@DossierIndex');
-            Route::post('/search', 'AdminDash@DossierSearch');
+        Route::prefix('realops')->middleware('toggle:realops')->middleware('permission:staff')->group(function () {
+            Route::get('/', 'RealopsController@adminIndex');
+            Route::get('/create', 'RealopsController@showCreateFlight');
+            Route::post('/create', 'RealopsController@createFlight');
+            Route::post('/create/bulk', 'RealopsController@bulkUploadFlights');
+            Route::get('/edit/{id}', 'RealopsController@showEditFlight');
+            Route::put('/edit/{id}', 'RealopsController@editFlight');
+            Route::get('/{id}', 'RealopsController@deleteFlight');
+            Route::put('/assign-pilot/{id}', 'RealopsController@assignPilotToFlight');
+            Route::get('/remove-pilot/{id}', 'RealopsController@removePilotFromFlight');
+            Route::get('/delete/{id}', 'RealopsController@deleteFlight');
+            Route::post('/dump-data', 'RealopsController@dumpData');
         });
-        Route::prefix('variables')->middleware('permission:snrStaff')->group(function () {
-            Route::get('/', 'AdminDash@ShowVariables');
-            Route::post('/updatevisitorsvariable', 'AdminDash@UpdateVisitorsVariable');
-            Route::post('/updatecurrencyvariable', 'AdminDash@UpdateCurrencyVariable');
-        });
-        Route::prefix('loas')->middleware('permission:snrStaff')->group(function () {
-            Route::get('/', 'AdminDash@ShowLoas');
-            Route::get('/edit/{id}', 'AdminDash@ViewLoa');
-            Route::post('/update/{id}', 'AdminDash@UpdateLoa');
+        Route::prefix('toggles')->middleware('permission:staff')->group(function () {
+            Route::get('/', 'AdminDash@showFeatureToggles');
+            Route::get('/create', 'AdminDash@showCreateFeatureToggle');
+            Route::post('/create', 'AdminDash@createFeatureToggle');
+            Route::get('/toggle/{toggle_name}', 'AdminDash@toggleFeatureToggle');
         });
     });
 });
@@ -266,14 +283,16 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
 
 /*
 *	Webmaster Permission Grant
-*	Use this to grant yourself webmaster privelages. Should be disabled for security reasons.
+*	Use this to grant yourself webmaster privileges. Should be disabled for security reasons.
 */
 
+/*
 Route::get('/laratrust', function () {
-//	$user = App\User::find(1315435);
-//	$user->attachRole('wm');
-//    \Auth::loginUsingId(1315435);
+    $user = App\User::find(1315134);
+
+    $user->attachRole('wm');
 });
+*/
 
 /*
 *	End Webmaster Permission Grant

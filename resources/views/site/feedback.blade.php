@@ -1,26 +1,26 @@
 @extends('layouts.master')
 
 @section('title')
-    New Feedback
+New Feedback
 @endsection
 
 @section('content')
-    <span class="border border-light" style="background-color:#F0F0F0">
+<span class="border border-light" style="background-color:#F0F0F0">
     <div class="container">
         &nbsp;
         <h2>Leave New Feedback</h2>
         &nbsp;
     </div>
 </span>
-    <br>
+<br>
 
-    <div class="container">
-        {!! Form::open(['action' => 'FrontController@saveNewFeedback']) !!}
+<div class="container">
+    {!! Form::open(['action' => 'FrontController@saveNewFeedback']) !!}
         <div class="row">
             <div class="col-sm-6">
                 <div class="form-group">
-                    {!! Form::label('controller', 'Controller:', ['class' => 'control-label']) !!}
-                    {!! Form::select('controller', $controllers, null, ['placeholder' => 'Select Controller', 'class' => 'form-control']) !!}
+                    {!! Form::label('feedback_id', 'Event or Controller:', ['class' => 'control-label']) !!}
+                    {!! Form::select('feedback_id', $feedbackOptions, $controllerSelected, ['placeholder' => 'Select Event or Controller', 'class' => 'form-control']) !!}
                 </div>
                 <div class="form-group">
                     {!! Form::label('service', 'Service Level:', ['class' => 'control-label']) !!}
@@ -64,9 +64,9 @@
             {!! Form::label('comments', 'Additional Comments:', ['class' => 'control-label']) !!}
             {!! Form::textArea('comments', null, ['placeholder' => 'Additional Comments', 'class' => 'form-control']) !!}
         </div>
-        <div class="g-recaptcha" data-sitekey="6LcdaeMUAAAAAPegraMiMUtBu4ARKuLcbMHVcHQp"></div>
+        <div class="g-recaptcha" data-sitekey="6LcC3XoUAAAAAG8ST6HXqS3_reIZRLcA09sDdodw"></div>
         <br>
-        <button class="btn btn-success" type="submit">Send Feedback</button>
-        {!! Form::close() !!}
-    </div>
+        <button class="btn btn-success mb-2" type="submit">Send Feedback</button>
+    {!! Form::close() !!}
+</div>
 @endsection

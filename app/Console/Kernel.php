@@ -2,11 +2,11 @@
 
 namespace App\Console;
 
+use App\FeatureToggle;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
-class Kernel extends ConsoleKernel
-{
+class Kernel extends ConsoleKernel {
     /**
      * The Artisan commands provided by your application.
      *
@@ -16,36 +16,39 @@ class Kernel extends ConsoleKernel
         '\App\Console\Commands\FetchMetar',
         '\App\Console\Commands\OnlineControllerUpdate',
         '\App\Console\Commands\RosterUpdate',
+        '\App\Console\Commands\VisitAgreement',
         '\App\Console\Commands\EventEmails',
         '\App\Console\Commands\ARTCCOverflights',
-        '\App\Console\Commands\SoloCerts',
-        '\App\Console\Commands\LoaExpiration',
+        '\App\Console\Commands\RosterRemovalWarn',
+        '\App\Console\Commands\VATUSAEventsUpdate',
+        '\App\Console\Commands\SetmoreAppointments',
     ];
 
     /**
      * Define the application's command schedule.
-     *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
-     * @return void
      */
-    protected function schedule(Schedule $schedule)
-    {
+    protected function schedule(Schedule $schedule): void {
+        $schedule->command('cache:prune-stale-tags')->hourly();
+        $schedule->command('SoloCerts:UpdateSoloCerts')->daily();
         $schedule->command('RosterUpdate:UpdateRoster')->hourly();
-        $schedule->command('Weather:UpdateWeather')->everyFiveMinutes();
+        $schedule->command('VATUSAEvents:Update')->hourly();
         $schedule->command('Overflights:GetOverflights')->everyFiveMinutes();
-        $schedule->command('OnlineControllers:GetControllers')->everyMinute();
-        $schedule->command('Event:SendEventReminder')->dailyAt('00:30');
-        $schedule->command('SoloCerts:Expiration')->dailyAt('00:30');
-        $schedule->command('LOAs:Expiration')->dailyAt('00:30');
+        $schedule->command('Weather:UpdateWeather')->everyFiveMinutes();
+        if (FeatureToggle::isEnabled('online_controller_debug')) {
+            $schedule->command('OnlineControllers:GetControllers')->everyMinute()->appendOutputTo('storage/logs/online-controllers.log')->emailOutputOnFailure('wm@ztlartcc.org');
+        } else {
+            $schedule->command('OnlineControllers:GetControllers')->everyMinute();
+        }
+        $schedule->command('SetmoreAppointments:Update')->everyThirtyMinutes();
+        if (FeatureToggle::isEnabled("auto_support_events")) {
+            $schedule->command('Events:UpdateSupportEvents')->daily();
+        }
     }
 
     /**
      * Register the commands for the application.
-     *
-     * @return void
      */
-    protected function commands()
-    {
+    protected function commands(): void {
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');

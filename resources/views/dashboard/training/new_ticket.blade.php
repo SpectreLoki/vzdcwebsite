@@ -11,15 +11,12 @@ New Training Ticket
     &nbsp;
 </div>
 <br>
-<div align="right">
-    <right><h5>Zulu/UTC Time Now:</h5></right>
-    <right><iframe style="pointer-events: none" src="https://freesecure.timeanddate.com/clock/i6hnccu7/fs16/tct/pct/bas6/bat6/bac777/pa8/tt0/tm2/th1/ta1/tb4" frameborder="0" width="200" height="64" allowTransparency="true"></iframe></right>
-</div>
+
 <div class="container">
     {!! Form::open(['action' => 'TrainingDash@saveNewTicket']) !!}
         @csrf
         <div class="row">
-            <div class="col-sm">
+            <div class="col-sm-3">
                 <div class="form-group">
                     {!! Form::label('controller', 'Controller', ['class' => 'form-label']) !!}
                     @if($c != null)
@@ -29,56 +26,116 @@ New Training Ticket
                     @endif
                 </div>
             </div>
-            <div class="col-sm">
+            <div class="col-sm-3">
                 <div class="form-group">
-                    {!! Form::label('position', 'Position', ['class' => 'form-label']) !!}
+                    {!! Form::label('position', 'Session Category', ['class' => 'form-label']) !!}
                     {!! Form::select('position', [
-                        0 => 'Minor Delivery/Ground',
-                        1 => 'Minor Local',
-                        2 => 'Major Delivery/Ground',
-                        3 => 'Major Local',
-                        4 => 'Minor Approach',
-                        5 => 'Major Approach',
-                        6 => 'Center'
-                    ], null, ['placeholder' => 'Select Position', 'class' => 'form-control']) !!}
+                        100 => 'ZTL On-Boarding',
+                        101 => 'Class D/C Clearance Delivery',
+                        102 => 'Class B Clearance Delivery',
+                        105 => 'Class D/C Ground',
+                        106 => 'Class B Ground',
+                        109 => 'Class D Tower',
+                        110 => 'Class C Tower',
+                        111 => 'Class B Tower',
+                        104 => 'ATL Clearance Delivery',
+                        108 => 'ATL Ground',						
+                        113 => 'ATL Tower',
+                        115 => 'Minor Approach',
+						123 => 'BHM Approach',
+                        116 => 'CLT Approach',
+                        117 => 'A80 Departure/Satellite Radar',
+                        118 => 'A80 Terminal Arrival Radar',
+                        119 => 'A80 Arrival Radar',
+                        121 => 'Atlanta Center',
+                        122 => 'Recurrent Training',
+						124 => 'Other',
+						125 => 'Mentor Training',
+                    ], null, ['placeholder' => 'Select Training Session', 'class' => 'form-control']) !!}
                 </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-sm">
+            <div class="col-sm-3">
                 <div class="form-group">
-                    {!! Form::label('facility', 'Facility', ['class' => 'form-label']) !!}
-                    {!! Form::select('facility', [
-                        0 => 'KIAD',
-                        1 => 'KBWI',
-                        2 => 'KDCA',
-                        3 => 'KORF',
-                        4 => 'DC'
-                    ], null, ['placeholder' => 'Select Facility', 'class' => 'form-control']) !!}
+                    {!! Form::label('session_id', 'Session ID', ['class' => 'form-label']) !!}
+                    {!! Form::select('session_id', [
+                        200 => 'DEL0 - S1T0-O',
+                        201 => 'DEL1 - S1T1',
+                        202 => 'DEL2 - S1P1',
+                        203 => 'DEL3 - S1T2',
+                        204 => 'DEL4 - S1P2-S',
+                        205 => 'GND1 - S1T3-S',
+						258 => 'GND2 - S1M1-O',
+                        206 => 'TWR1 - S2T1',
+                        207 => 'TWR2 - S2T2',
+                        208 => 'TWR3 - S2T3',
+                        209 => 'TWR4 - S2P1-S',
+                        210 => 'TWR5 - S2T4',
+                        211 => 'TWR6 - S2T5-S',
+                        212 => 'TWR7 - S2T6',
+                        213 => 'TWR8 - S2P2',
+                        214 => 'TWR9 - S2M1-S',
+                        216 => 'APP1 - S3T1-S',
+                        217 => 'APP2 - S3T2-S',
+                        218 => 'APP3 - S3P1-S',
+                        219 => 'APP4 - S3T3-S',
+                        220 => 'APP5 - S3T4-S',
+                        221 => 'APP6 - S3T5-S',
+                        222 => 'APP7 - S3M1-S',
+                        223 => 'APP8 - S3T6',
+                        224 => 'APP9 - S3P2',
+                        225 => 'APP10 - S3P3',
+                        226 => 'APP11 - S3P4',
+                        227 => 'APP12 - S3M2-S',
+                        228 => 'CTR0 - C1T0-O',
+                        229 => 'CTR1 - C1T1-S',
+						260 => 'CTR2 - C1T2-O',
+                        230 => 'CTR3 - C1T3-S',
+                        231 => 'CTR6 - C1T4-S',
+                        232 => 'CTR4 - C1P1-S',
+                        233 => 'CTR5 - C1M1-S',
+                        234 => 'CTR7 - C1M2-O',
+                        235 => 'CTR8 - C1M1-S',
+                        236 => 'ZTL1 - M1M1-S',
+                        237 => 'ATL1 - M2T1',
+                        239 => 'ATL2 - M2T2',
+                        242 => 'ATL3 - M2T3',
+						243 => 'ATL4 - M2T4',
+						240 => 'ATL5 - M2P1',
+						259 => 'ATL6 - M2P2-S',
+						241 => 'ATL7 - M2M1-O',
+                        244 => 'ATL8 - M2M2-S',
+                        245 => 'A801 - M3P1-S',
+                        246 => 'A802 - M3M1-O',
+                        247 => 'A803 - M3P2',
+                        248 => 'A804 - M3M2-O',
+                        249 => 'A805 - M3T1-S',
+                        250 => 'A806 - M3P3',
+                        251 => 'A807 - M3P4',
+                        252 => 'A808 - M3M3-O',
+                        253 => 'A809 - M3T3-O',
+                        254 => 'A8010 - M3T4-S',
+                        255 => 'A8011 - M3P5',
+                        256 => 'A8012 - M3M4-S',
+						257 => 'Unlisted/other',
+                    ], null, ['placeholder' => 'Select Session ID', 'class' => 'form-control']) !!}
                 </div>
             </div>
-            <div class="col-sm">
+            <div class="col-sm-3">
                 <div class="form-group">
                     @if(Auth::user()->hasRole('ins'))
-                        {!! Form::label('type', 'Session Type', ['class' => 'form-label']) !!}
+                        {!! Form::label('type', 'Progress', ['class' => 'form-label']) !!}
                         {!! Form::select('type', [
-                            0 => 'Classroom Training',
-                            1 => 'Sweatbox Training',
-                            2 => 'Live Training',
-                            3 => 'Live Monitoring',
-                            4 => 'Sweatbox OTS (Pass)',
-                            5 => 'Live OTS (Pass)',
-                            6 => 'Sweatbox OTS (Fail)',
-                            7 => 'Live OTS (Fail)'
+                            10 => 'No Show',
+                            12 => 'Completed',
+                            13 => 'Incompleted',
                         ], null, ['placeholder' => 'Select Position', 'class' => 'form-control']) !!}
                     @else
-                        {!! Form::label('type', 'Session Type', ['class' => 'form-label']) !!}
+                        {!! Form::label('type', 'Progress', ['class' => 'form-label']) !!}
                         {!! Form::select('type', [
-                            0 => 'Classroom Training',
-                            1 => 'Sweatbox Training',
-                            2 => 'Live Training',
-                            3 => 'Live Monitoring'
-                        ], null, ['placeholder' => 'Select Session Type', 'class' => 'form-control']) !!}
+                            10 => 'No Show',
+                            12 => 'Completed',
+                            13 => 'Incompleted',
+                        ], null, ['placeholder' => 'Select Progress Type', 'class' => 'form-control']) !!}
                     @endif
                 </div>
             </div>
@@ -97,7 +154,11 @@ New Training Ticket
             </div>
             <div class="col-sm-3">
                 <div class="form-group">
-                    {!! Form::label('start', 'Start Time in Zulu', ['class' => 'form-label']) !!}
+					@php 
+						$currentDateET = new DateTime("now", new DateTimeZone('America/New_York') ); 
+						$currentTimeET = $currentDateET->format('H:i');
+					@endphp
+                    {!! Form::label('start', 'Start Time in Eastern (now ' . $currentTimeET . ')', ['class' => 'form-label']) !!}
                     <div class="input-group date" id="datetimepicker2" data-target-input="nearest">
                         {!! Form::text('start', null, ['placeholder' => '00:00', 'class' => 'form-control datetimepicker-input', 'data-target' => '#datetimepicker2']) !!}
                     </div>
@@ -105,7 +166,7 @@ New Training Ticket
             </div>
             <div class="col-sm-3">
                 <div class="form-group">
-                    {!! Form::label('end', 'End Time in Zulu', ['class' => 'form-label']) !!}
+                    {!! Form::label('end', 'End Time in Eastern', ['class' => 'form-label']) !!}
                     <div class="input-group date" id="datetimepicker3" data-target-input="nearest">
                         {!! Form::text('end', null, ['placeholder' => '00:00', 'class' => 'form-control datetimepicker-input', 'data-target' => '#datetimepicker3']) !!}
                     </div>
@@ -113,7 +174,7 @@ New Training Ticket
             </div>
             <div class="col-sm-3">
                 <div class="form-group">
-                    {!! Form::label('duration', 'Duration (HH:mm)', ['class' => 'form-label']) !!}
+                    {!! Form::label('duration', 'Duration (hh:mm)', ['class' => 'form-label']) !!}
                     <div class="input-group date" id="datetimepicker4" data-target-input="nearest">
                         {!! Form::text('duration', null, ['placeholder' => '00:00', 'class' => 'form-control datetimepicker-input', 'data-target' => '#datetimepicker4']) !!}
                     </div>
@@ -136,14 +197,17 @@ New Training Ticket
         </div>
         {!! Form::label('ots', 'Recommend for OTS?', ['class' => 'form-label']) !!}
         {!! Form::checkBox('ots', '1') !!}
-        {!! Form::label('no_show', 'Mark Session as No-Show?', ['class' => 'form-label']) !!}
-        {!! Form::checkBox('no_show', '1') !!}
         <br>
+		{!! Form::label('monitor', 'Can be monitored', ['class' => 'form-label']) !!}
+		{!! Form::checkBox('monitor', '1') !!}
+		<br>
+	    {!! Form::label('cert', 'Certification or Solo Issued', ['class' => 'form-label']) !!}
+		{!! Form::checkBox('cert', 1) !!}
+		<br>
         <button class="btn btn-success" action="submit">Submit Ticket</button>
         <a href="/dashboard/training/tickets" class="btn btn-danger">Cancel</a>
     {!! Form::close() !!}
 </div>
-
 <script type="text/javascript">
 $(function () {
     $('#datetimepicker1').datetimepicker({
@@ -154,7 +218,7 @@ $(function () {
 $(function () {
     $('#datetimepicker2').datetimepicker({
         format: 'HH:mm'
-    });
+	});
 });
 
 $(function () {
@@ -168,12 +232,42 @@ $(function () {
         format: 'HH:mm'
     });
 });
-</script>
-<script>
-    $(document).ready(function ($) {
-        $('#timepicker').datetimepicker({
-            format: 'hh:mm a'
-        });
+$(document).ready(function ($) {
+    $('#timepicker').datetimepicker({
+        format: 'hh:mm a'
     });
+});
+
+$("#start,#end").on("change",function(){
+		setTimeout(function() {
+			autoCalcDuration(document.getElementById('start').value,document.getElementById('end').value,document.getElementById('duration').value);
+		}, 100);
+    });
+
+function autoCalcDuration(time1,time2,target) {
+	if((time1 != '')&&(time2 != '')) {
+		var start = time1.split(':');
+		var end = time2.split(':');
+		var startDeci = parseInt(start[0]) + (parseInt(start[1]) / 60);
+		var endDeci = parseInt(end[0]) + (parseInt(end[1]) / 60);
+		if(startDeci > endDeci) {
+			endDeci += 24;
+		}
+		var duration = endDeci - startDeci;
+		var duration_hours = parseInt(duration);
+		var duration_minutes = Math.round((duration - duration_hours) * 60);
+		if(duration_hours < 10) {
+			duration_hours = '0' + duration_hours;
+		}
+		if(duration_minutes < 10) {
+			duration_minutes = '0' + duration_minutes;
+		}
+		document.getElementById('duration').value = duration_hours + ':' + duration_minutes;
+		$('#datetimepicker4').datetimepicker({
+			format: 'HH:mm'
+		});
+	}
+}
+
 </script>
 @endsection

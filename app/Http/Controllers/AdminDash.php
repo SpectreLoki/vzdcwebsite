@@ -3,18 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Airport;
-use App\Audit;
 use App\Announcement;
+use App\Audit;
 use App\Bronze;
 use App\Calendar;
 use App\ControllerLog;
 use App\Event;
 use App\EventPosition;
 use App\EventRegistration;
+use App\FeatureToggle;
 use App\Feedback;
 use App\File;
 use App\Incident;
-use App\MemberLog;
+use App\LocalHero;
 use App\Metar;
 use App\PositionPreset;
 use App\PresetPosition;
@@ -23,25 +24,19 @@ use App\Scenery;
 use App\SoloCert;
 use App\User;
 use App\Visitor;
-use App\Variable;
-use App\Loa;
+use App\VisitRej;
 use Artisan;
 use Auth;
 use Carbon\Carbon;
 use Config;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Input;
-use Mail;
-use Storage;
-
 use GuzzleHttp\Client;
-use App\TrainingTicket;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Mail;
 
-class AdminDash extends Controller
-{
-    public function showScenery()
-    {
+class AdminDash extends Controller {
+    public function showScenery() {
         $scenery = Scenery::orderBy('airport', 'ASC')->get();
 
         $fsx = $scenery->where('sim', 0);
@@ -51,20 +46,17 @@ class AdminDash extends Controller
         return view('dashboard.admin.scenery.index')->with('fsx', $fsx)->with('xp', $xp)->with('afcad', $afcad);
     }
 
-    public function viewScenery($id)
-    {
+    public function viewScenery($id) {
         $scenery = Scenery::find($id);
 
         return view('dashboard.admin.scenery.view')->with('scenery', $scenery);
     }
 
-    public function newScenery()
-    {
+    public function newScenery() {
         return view('dashboard.admin.scenery.new');
     }
 
-    public function storeScenery(Request $request)
-    {
+    public function storeScenery(Request $request) {
         $validator = $request->validate([
             'apt' => 'required',
             'url' => 'required|unique:scenery,link',
@@ -75,35 +67,33 @@ class AdminDash extends Controller
         ]);
 
         $scenery = new Scenery;
-        $scenery->airport = Input::get('apt');
-        $scenery->developer = Input::get('dev');
-        $scenery->sim = Input::get('sim');
-        $scenery->link = Input::get('url');
-        $scenery->price = Input::get('price');
-        $scenery->currency = Input::get('currency');
-        $scenery->image1 = Input::get('image1');
-        $scenery->image2 = Input::get('image2');
-        $scenery->image3 = Input::get('image3');
+        $scenery->airport = $request->input('apt');
+        $scenery->developer = $request->input('dev');
+        $scenery->sim = $request->input('sim');
+        $scenery->link = $request->input('url');
+        $scenery->price = $request->input('price');
+        $scenery->currency = $request->input('currency');
+        $scenery->image1 = $request->input('image1');
+        $scenery->image2 = $request->input('image2');
+        $scenery->image3 = $request->input('image3');
         $scenery->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' added new scenery.';
+        $audit->what = Auth::user()->full_name.' added new scenery.';
         $audit->save();
 
         return redirect('/dashboard/admin/scenery')->with('success', 'Scenery added successfully.');
     }
 
-    public function editScenery(Request $request, $id)
-    {
+    public function editScenery(Request $request, $id) {
         $scenery = Scenery::find($id);
 
         return view('dashboard.admin.scenery.edit')->with('scenery', $scenery);
     }
 
-    public function saveScenery(Request $request, $id)
-    {
+    public function saveScenery(Request $request, $id) {
         $validator = $request->validate([
             'apt' => 'required',
             'url' => 'required',
@@ -112,52 +102,48 @@ class AdminDash extends Controller
         ]);
 
         $scenery = Scenery::find($id);
-        $scenery->airport = Input::get('apt');
-        $scenery->developer = Input::get('dev');
-        $scenery->sim = Input::get('sim');
-        $scenery->link = Input::get('url');
-        $scenery->image1 = Input::get('image1');
-        $scenery->image2 = Input::get('image2');
-        $scenery->image3 = Input::get('image3');
+        $scenery->airport = $request->input('apt');
+        $scenery->developer = $request->input('dev');
+        $scenery->sim = $request->input('sim');
+        $scenery->link = $request->input('url');
+        $scenery->image1 = $request->input('image1');
+        $scenery->image2 = $request->input('image2');
+        $scenery->image3 = $request->input('image3');
         $scenery->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' updated a scenery.';
+        $audit->what = Auth::user()->full_name.' updated a scenery.';
         $audit->save();
 
         return redirect('/dashboard/admin/scenery')->with('success', 'Scenery edited successfully.');
     }
 
-    public function deleteScenery($id)
-    {
+    public function deleteScenery($id) {
         $scenery = Scenery::find($id);
         $scenery->delete();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' removed a scenery.';
+        $audit->what = Auth::user()->full_name.' removed a scenery.';
         $audit->save();
 
         return redirect('/dashboard/admin/scenery')->with('success', 'Scenery deleted successfully.');
     }
 
-    public function showAirports()
-    {
+    public function showAirports() {
         $airports = Airport::orderBy('ltr_3', 'ASC')->get();
 
         return view('dashboard.admin.airports.index')->with('airports', $airports);
     }
 
-    public function newAirport()
-    {
+    public function newAirport() {
         return view('dashboard.admin.airports.new');
     }
 
-    public function storeAirport(Request $request)
-    {
+    public function storeAirport(Request $request) {
         $validator = $request->validate([
             'name' => 'required',
             'FAA' => 'required|unique:airports,ltr_3',
@@ -165,13 +151,13 @@ class AdminDash extends Controller
         ]);
 
         $a = new Airport;
-        $a->name = Input::get('name');
-        $a->ltr_3 = Input::get('FAA');
-        $a->ltr_4 = Input::get('ICAO');
+        $a->name = $request->input('name');
+        $a->ltr_3 = $request->input('FAA');
+        $a->ltr_4 = $request->input('ICAO');
         $a->save();
 
         $metar = new Metar;
-        $metar->icao = Input::get('ICAO');
+        $metar->icao = $request->input('ICAO');
         $metar->save();
 
         Artisan::call('Weather:UpdateWeather');
@@ -179,8 +165,7 @@ class AdminDash extends Controller
         return redirect('/dashboard/admin/airports')->with('success', 'The airport was added successfully.');
     }
 
-    public function addAirportToHome($id)
-    {
+    public function addAirportToHome($id) {
         $airport = Airport::find($id);
         $airport->front_pg = 1;
         $airport->save();
@@ -188,8 +173,7 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'You have successfully added this airport to the home page.');
     }
 
-    public function removeAirportFromHome($id)
-    {
+    public function removeAirportFromHome($id) {
         $airport = Airport::find($id);
         $airport->front_pg = 0;
         $airport->save();
@@ -197,16 +181,14 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'You have successfully removed this airport from the home page.');
     }
 
-    public function deleteAirport($id)
-    {
+    public function deleteAirport($id) {
         $airport = Airport::find($id);
         $airport->delete();
 
         return redirect('/dashboard/admin/airports')->with('success', 'The airport has been deleted successfully.');
     }
 
-    public function showRoster()
-    {
+    public function showRoster() {
         $hcontrollers = User::where('visitor', '0')->orderBy('lname', 'ASC')->get();
         $vcontrollers = User::where('visitor', '1')->orderBy('lname', 'ASC')->get();
 
@@ -220,13 +202,14 @@ class AdminDash extends Controller
         return view('dashboard.admin.roster.index')->with('hcontrollers', $hcontrollers)->with('vcontrollers', $vcontrollers)->with('mtr', $mtr)->with('ins', $ins);
     }
 
-    public function showRosterPurge($year = null, $month = null)
-    {
-        if ($year == null)
+    public function showRosterPurge($year = null, $month = null) {
+        if ($year == null) {
             $year = date('y');
+        }
 
-        if ($month == null)
+        if ($month == null) {
             $month = date('n');
+        }
 
         $stats = ControllerLog::aggregateAllControllersByPosAndMonth($year, $month);
         $homec = User::where('visitor', 0)->where('status', 1)->orderBy('lname', 'ASC')->get();
@@ -235,85 +218,118 @@ class AdminDash extends Controller
             return $user->hasRole('mtr') || $user->hasRole('ins');
         });
 
-        return view('dashboard.admin.roster.purge')->with('stats', $stats)->with('homec', $homec)->with('visitc', $visitc)
-            ->with('trainc', $trainc)->with('month', $month)->with('year', $year);
-    }
-
-    public function editController($id)
-    {
-        $user = User::find($id);
-
-        $tickets_sort = TrainingTicket::where('controller_id', $id)->get()->sortByDesc(function ($t) {
-            return strtotime($t->date . ' ' . $t->start_time);
-        })->pluck('id');
-        if ($tickets_sort->count() != 0) {
-            $tickets_order = implode(',', array_fill(0, count($tickets_sort), '?'));
-            $tickets = TrainingTicket::whereIn('id', $tickets_sort)->orderByRaw("field(id,{$tickets_order})", $tickets_sort)->paginate(10);
+        if ($month == 1) {
+            $last_year = $year - 1;
         } else {
-            $tickets = null;
+            $last_year = $year;
         }
 
-        return view('dashboard.admin.roster.edit')->with('user', $user)->with('tickets', $tickets);
+        if ($month == 1) {
+            $last_month = 12;
+        } else {
+            $last_month = $month - 1;
+        }
+
+        $last_stats = ControllerLog::aggregateAllControllersByPosAndMonth($last_year, $last_month);
+
+        return view('dashboard.admin.roster.purge')->with('stats', $stats)->with('last_stats', $last_stats)->with('homec', $homec)->with('visitc', $visitc)
+                                                   ->with('trainc', $trainc)->with('month', $month)->with('year', $year);
     }
 
-    public function updateController(Request $request, $id)
-    {
+    public function editController($id) {
         $user = User::find($id);
 
-        if (Auth::user()->can('roster')) {
+        return view('dashboard.admin.roster.edit')->with('user', $user);
+    }
 
-            if ($user->ctr == 99) {
-                if (Input::get('ctr') != 0) {
-                    $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
+    public function updateController(Request $request, $id) {
+        $user = User::find($id);
+
+        if (Auth::user()->isAbleTo('roster')) {
+            $user->del = $request->input('del');
+            $user->gnd = $request->input('gnd');
+            if ($user->twr == 99) {
+                if ($request->input('twr') != 0) {
+                    $solo = SoloCert::where('cid', $user->id)->where('status', 0)->first();
                     if ($solo) {
-                        $solo->status = 2;
+                        $solo->status = 1;
                         $solo->save();
                     }
-                    $user->ctr = Input::get('ctr');
+                    $user->twr = $request->input('twr');
                 } else {
-                    $user->ctr = 0;
+                    $user->twr = 0;
                 }
-            } elseif (Input::get('ctr') == 99) {
+            } elseif ($request->input('twr') == 99) {
                 $expire = Carbon::now()->addMonth()->format('Y-m-d');
-                $user->ctr = Input::get('ctr');
+                $user->twr = $request->input('twr');
                 $cert = new SoloCert;
                 $cert->cid = $id;
-                $cert->pos = 5;
+                $cert->pos = 0;
                 $cert->expiration = $expire;
-                $cert->status = 1;
+                $cert->status = 0;
                 $cert->save();
             } else {
-                $user->ctr = Input::get('ctr');
+                $user->twr = $request->input('twr');
             }
-
-            $user->initials = Input::get('initials');
-            $user->train_pwr = Input::get('train_pwr');
-            $user->monitor_pwr = Input::get('monitor_pwr');
-            if (Input::get('visitor') == null) {
+            if ($user->app == 99) {
+                if ($request->input('app') != 0) {
+                    $solo = SoloCert::where('cid', $user->id)->where('status', 0)->first();
+                    if ($solo) {
+                        $solo->status = 1;
+                        $solo->save();
+                    }
+                    $user->app = $request->input('app');
+                } else {
+                    $user->app = 99;
+                }
+            } else {
+                $user->app = $request->input('app');
+            }
+            if ($user->ctr == 99) {
+                if ($request->input('ctr') != 0) {
+                    $solo = SoloCert::where('cid', $user->id)->where('status', 0)->first();
+                    if ($solo) {
+                        $solo->status = 1;
+                        $solo->save();
+                    }
+                    $user->ctr = $request->input('ctr');
+                } else {
+                    $user->ctr = 99;
+                }
+            } else {
+                $user->ctr = $request->input('ctr');
+            }
+            $user->initials = $request->input('initials');
+            $user->max = $request->input('max');
+          
+            if ($request->input('visitor') == null) {
                 $user->visitor = 0;
-            } elseif (Input::get('visitor') == 1) {
+            } elseif ($request->input('visitor') == 1) {
                 $user->visitor = 1;
             }
-            if (Input::get('canTrain') == null) {
+            if ($request->input('canTrain') == null) {
                 $user->canTrain = 0;
-            } elseif (Input::get('canTrain') == 1) {
+            } elseif ($request->input('canTrain') == 1) {
                 $user->canTrain = 1;
             }
-            if (Input::get('canEvents') == null) {
+            if ($request->input('canEvents') == null) {
                 $user->canEvents = 0;
-            } elseif (Input::get('canEvents') == 1) {
+            } elseif ($request->input('canEvents') == 1) {
                 $user->canEvents = 1;
             }
-            if (Input::get('api_exempt') == null) {
+            if ($request->input('api_exempt') == null) {
                 $user->api_exempt = 0;
-            } elseif (Input::get('api_exempt') == 1) {
+            } elseif ($request->input('api_exempt') == 1) {
                 $user->api_exempt = 1;
             }
-            $user->status = Input::get('status');
-            $user->visitor_from = Input::get('visitor_from');
+            $user->twr_solo_fields = $request->input('twr_solo_fields');
+            $user->twr_solo_expires = $request->input('twr_solo_expires');
+            
+            $user->status = $request->input('status');
+            $user->visitor_from = $request->input('visitor_from');
             $user->save();
 
-            if ($user->hasRole(['atm', 'datm', 'ta', 'ata', 'wm', 'awm', 'fe', 'afe', 'ec', 'aec']) == true) {
+            if ($user->hasRole(['atm', 'datm', 'ta', 'ata', 'wm', 'awm', 'fe', 'afe', 'ec']) == true) {
                 if ($user->hasRole('atm')) {
                     $user->detachRole('atm');
                 } elseif ($user->hasRole('datm')) {
@@ -332,31 +348,45 @@ class AdminDash extends Controller
                     $user->detachRole('afe');
                 } elseif ($user->hasRole('ec')) {
                     $user->detachRole('ec');
-                } elseif ($user->hasRole('aec')) {
-                    $user->detachRole('aec');
                 }
             }
 
-            if (Input::get('staff') == 1) {
+            if ($request->input('staff') == 1) {
                 $user->attachRole('atm');
-            } elseif (Input::get('staff') == 2) {
+            } elseif ($request->input('staff') == 2) {
                 $user->attachRole('datm');
-            } elseif (Input::get('staff') == 3) {
+            } elseif ($request->input('staff') == 3) {
                 $user->attachRole('ta');
-            } elseif (Input::get('staff') == 4) {
+            } elseif ($request->input('staff') == 4) {
                 $user->attachRole('ata');
-            } elseif (Input::get('staff') == 5) {
+            } elseif ($request->input('staff') == 5) {
                 $user->attachRole('wm');
-            } elseif (Input::get('staff') == 6) {
+            } elseif ($request->input('staff') == 6) {
                 $user->attachRole('awm');
-            } elseif (Input::get('staff') == 7) {
+            } elseif ($request->input('staff') == 7) {
                 $user->attachRole('fe');
-            } elseif (Input::get('staff') == 8) {
+            } elseif ($request->input('staff') == 8) {
                 $user->attachRole('afe');
-            } elseif (Input::get('staff') == 9) {
+            } elseif ($request->input('staff') == 9) {
                 $user->attachRole('ec');
-            } elseif (Input::get('staff') == 10) {
+            }
+
+            if ($user->hasRole(['aec','aec-ghost','events-team']) == true) {
+                if ($user->hasRole('aec')) {
+                    $user->detachRole('aec');
+                } elseif ($user->hasRole('aec-ghost')) {
+                    $user->detachRole('aec-ghost');
+                } elseif ($user->hasRole('events-team')) {
+                    $user->detachRole('events-team');
+                }
+            }
+
+            if ($request->input('events_staff') == 1) {
                 $user->attachRole('aec');
+            } elseif ($request->input('events_staff') == 2) {
+                $user->attachRole('aec-ghost');
+            } elseif ($request->input('events_staff') == 3) {
+                $user->attachRole('events-team');
             }
 
             if ($user->hasRole(['mtr', 'ins']) == true) {
@@ -368,14 +398,15 @@ class AdminDash extends Controller
                     $user->save();
                 }
             }
-            if (Input::get('training') == 1) {
+
+            if ($request->input('training') == 1) {
                 $user->attachRole('mtr');
                 if ($user->train_pwr == null) {
                     $user->train_pwr = 1;
                     $user->monitor_pwr = 1;
                     $user->save();
                 }
-            } elseif (Input::get('training') == 2) {
+            } elseif ($request->input('training') == 2) {
                 $user->attachRole('ins');
                 if ($user->train_pwr == null) {
                     $user->train_pwr = 6;
@@ -383,209 +414,127 @@ class AdminDash extends Controller
                     $user->save();
                 }
             }
-        }
-        $user->delgnd = Input::get('delgnd');
-        $user->bwi_gnd = Input::get('bwi_gnd');
-        $user->dca_gnd = Input::get('dca_gnd');
-        $user->iad_gnd = Input::get('iad_gnd');
-        if ($user->twr == 99) {
-            if (Input::get('twr') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
+        } elseif (Auth::user()->isAbleTo('train')) {
+            $user->del = $request->input('del');
+            $user->gnd = $request->input('gnd');
+            if ($user->twr == 99) {
+                if ($request->input('twr') != 0) {
+                    $solo = SoloCert::where('cid', $user->id)->where('status', 0)->first();
+                    if ($solo) {
+                        $solo->status = 1;
+                        $solo->save();
+                    }
+                    $user->twr = $request->input('twr');
+                } else {
+                    $user->twr = 99;
                 }
-                $user->twr = Input::get('twr');
+            } elseif ($request->input('twr') == 99) {
+                $expire = Carbon::now()->addMonth()->format('Y-m-d');
+                $user->twr = $request->input('twr');
+                $cert = new SoloCert;
+                $cert->cid = $id;
+                $cert->pos = 0;
+                $cert->expiration = $expire;
+                $cert->status = 0;
+                $cert->save();
             } else {
-                $user->twr = 0;
+                $user->twr = $request->input('twr');
             }
-        } elseif (Input::get('twr') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->twr = Input::get('twr');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 0;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->twr = Input::get('twr');
-        }
-        if ($user->bwi_twr == 99) {
-            if (Input::get('bwi_twr') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
+            if ($user->app == 99) {
+                if ($request->input('app') != 0) {
+                    $solo = SoloCert::where('cid', $user->id)->where('status', 0)->first();
+                    if ($solo) {
+                        $solo->status = 1;
+                        $solo->save();
+                    }
+                    $user->app = $request->input('app');
+                } else {
+                    $user->app = 99;
                 }
-                $user->bwi_twr = Input::get('bwi_twr');
             } else {
-                $user->bwi_twr = 0;
+                $user->app = $request->input('app');
             }
-        } elseif (Input::get('bwi_twr') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->bwi_twr = Input::get('bwi_twr');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 0;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->bwi_twr = Input::get('bwi_twr');
-        }
-        if ($user->iad_twr == 99) {
-            if (Input::get('iad_twr') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
+            if ($user->ctr == 99) {
+                if ($request->input('ctr') != 0) {
+                    $solo = SoloCert::where('cid', $user->id)->where('status', 0)->first();
+                    if ($solo) {
+                        $solo->status = 1;
+                        $solo->save();
+                    }
+                    $user->ctr = $request->input('ctr');
+                } else {
+                    $user->ctr = 99;
                 }
-                $user->iad_twr = Input::get('iad_twr');
             } else {
-                $user->iad_twr = 0;
+                $user->ctr = $request->input('ctr');
             }
-        } elseif (Input::get('iad_twr') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->iad_twr = Input::get('iad_twr');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 0;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->iad_twr = Input::get('iad_twr');
-        }
-        if ($user->dca_twr == 99) {
-            if (Input::get('dca_twr') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
+            $user->twr_solo_fields = $request->input('twr_solo_fields');
+            $user->twr_solo_expires = $request->input('twr_solo_expires');
+            $user->save();
+        } else { // Events
+            if ($user->hasRole(['aec','aec-ghost','events-team']) == true) {
+                if ($user->hasRole('aec')) {
+                    $user->detachRole('aec');
+                } elseif ($user->hasRole('aec-ghost')) {
+                    $user->detachRole('aec-ghost');
+                } elseif ($user->hasRole('events-team')) {
+                    $user->detachRole('events-team');
                 }
-                $user->dca_twr = Input::get('dca_twr');
-            } else {
-                $user->dca_twr = 0;
             }
-        } elseif (Input::get('dca_twr') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->dca_twr = Input::get('dca_twr');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 0;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->dca_twr = Input::get('dca_twr');
-        }
-        if ($user->shd == 99) {
-            if (Input::get('shd') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
-                }
-                $user->shd = Input::get('shd');
-            } else {
-                $user->shd = 0;
-            }
-        } elseif (Input::get('shd') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->shd = Input::get('shd');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 1;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->shd = Input::get('shd');
-        }
-        if ($user->chp == 99) {
-            if (Input::get('chp') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
-                }
-                $user->chp = Input::get('chp');
-            } else {
-                $user->chp = 0;
-            }
-        } elseif (Input::get('chp') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->chp = Input::get('chp');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 2;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->chp = Input::get('chp');
-        }
-        if ($user->mtv == 99) {
-            if (Input::get('mtv') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
-                }
-                $user->mtv = Input::get('mtv');
-            } else {
-                $user->mtv = 0;
-            }
-        } elseif (Input::get('mtv') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->mtv = Input::get('mtv');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 3;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->mtv = Input::get('mtv');
-        }
-        if ($user->app == 99) {
-            if (Input::get('app') != 0) {
-                $solo = SoloCert::where('cid', $user->id)->where('status', 1)->first();
-                if ($solo) {
-                    $solo->status = 2;
-                    $solo->save();
-                }
-                $user->app = Input::get('app');
-            } else {
-                $user->app = 0;
-            }
-        } elseif (Input::get('app') == 99) {
-            $expire = Carbon::now()->addMonth()->format('Y-m-d');
-            $user->app = Input::get('app');
-            $cert = new SoloCert;
-            $cert->cid = $id;
-            $cert->pos = 4;
-            $cert->expiration = $expire;
-            $cert->status = 1;
-            $cert->save();
-        } else {
-            $user->app = Input::get('app');
-        }
-        $user->save();
 
+            if ($request->input('events_staff') == 1) {
+                $user->attachRole('aec');
+            } elseif ($request->input('events_staff') == 2) {
+                $user->attachRole('aec-ghost');
+            } elseif ($request->input('events_staff') == 3) {
+                $user->attachRole('events-team');
+            }
+            $user->save();
+        }
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' made changes to ' . $user->full_name . '.';
+        $audit->what = Auth::user()->full_name.' made changes to '.$user->full_name.'.';
         $audit->save();
 
-        return View('dashboard.admin.dossier-entry')->with('id', $user->id)->with('success', 'Controller updated successfully.');
+        return redirect('/dashboard/controllers/roster')->with('success', 'Controller updated successfully.');
     }
 
-    public function showVisitRequests()
-    {
+    public function disallowVisitReq($id) {
+        $user = User::find($id);
+        $name = $user->full_name;
+        $visitrej = new VisitRej;
+        $visitrej->cid = $id;
+        $visitrej->staff_cid = Auth::id();
+        $visitrej->save();
+        $user->status = 2;
+        $user->save();
+
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' removed '.$name.' from the visitor agreement.';
+        $audit->save();
+
+        return redirect('/dashboard/controllers/roster')->with('success', 'Controller removed from the visitor agreement.');
+    }
+
+    public function allowVisitReq(Request $request) {
+        $id = $request->cid;
+        $visitrej = VisitRej::where('cid', $id)->first();
+        $visitrej->delete();
+
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' readded '.$name.' to the visitor agreement.';
+        $audit->save();
+
+        return redirect('/dashboard/controllers/roster')->with('success', 'Controller allowed to visit.');
+    }
+
+    public function showVisitRequests() {
         $new = Visitor::where('status', 0)->orderBy('created_at', 'ASC')->get();
         $accepted = Visitor::where('status', 1)->orderBy('updated_at', 'ASC')->get();
         $rejected = Visitor::where('status', 2)->orderBy('updated_at', 'ASC')->get();
@@ -593,300 +542,43 @@ class AdminDash extends Controller
         return view('dashboard.admin.roster.vis_index')->with('new', $new)->with('accepted', $accepted)->with('rejected', $rejected);
     }
 
-    public function acceptVisitRequest($id)
-    {
+    public function acceptVisitRequest($id) {
         $visitor = Visitor::find($id);
+        $visitor->updated_by = Auth::id();
+        $visitor->status = 1;
+        $visitor->save();
+
+        Mail::send('emails.visit.accept', ['visitor' => $visitor], function ($message) use ($visitor) {
+            $message->from('visitors@notams.ztlartcc.org', 'vZTL ARTCC Visiting Department')->subject('Visitor Request Accepted');
+            $message->to($visitor->email)->cc('datm@ztlartcc.org');
+        });
 
         $parts = explode(" ", $visitor->name);
         $fname = $parts[0];
         $lname = $parts[1];
+        $initials = User::generateControllerInitials($fname, $lname);
 
-        $users_inc_v = User::get();
-        $fn_initial = substr($fname, 0, 1);
-        $ln_initial = substr($lname, 0, 1);
-
-        a:
-        $initials = $fn_initial . $ln_initial;
-        $yes = 1;
-        foreach ($users_inc_v as $u) {
-            if ($u->initials == $initials) {
-                $yes = 0;
-                break;
-            } else {
-                $yes = 1;
-            }
-        }
-
-        if ($yes === 1) {
-            $initials = $initials;
+        if (User::find($visitor->cid) !== null) {
+            $user = User::find($visitor->cid);
         } else {
-            $fi_int = rand(1, 26);
-            $li_int = rand(1, 26);
-
-            if ($fi_int == 1) {
-                $fn_initial = 'A';
-            } elseif ($fi_int == 2) {
-                $fn_initial = 'B';
-            } elseif ($fi_int == 3) {
-                $fn_initial = 'C';
-            } elseif ($fi_int == 4) {
-                $fn_initial = 'D';
-            } elseif ($fi_int == 5) {
-                $fn_initial = 'E';
-            } elseif ($fi_int == 6) {
-                $fn_initial = 'F';
-            } elseif ($fi_int == 7) {
-                $fn_initial = 'G';
-            } elseif ($fi_int == 8) {
-                $fn_initial = 'H';
-            } elseif ($fi_int == 9) {
-                $fn_initial = 'I';
-            } elseif ($fi_int == 10) {
-                $fn_initial = 'J';
-            } elseif ($fi_int == 11) {
-                $fn_initial = 'K';
-            } elseif ($fi_int == 12) {
-                $fn_initial = 'L';
-            } elseif ($fi_int == 13) {
-                $fn_initial = 'M';
-            } elseif ($fi_int == 14) {
-                $fn_initial = 'N';
-            } elseif ($fi_int == 15) {
-                $fn_initial = 'O';
-            } elseif ($fi_int == 16) {
-                $fn_initial = 'P';
-            } elseif ($fi_int == 17) {
-                $fn_initial = 'Q';
-            } elseif ($fi_int == 18) {
-                $fn_initial = 'R';
-            } elseif ($fi_int == 19) {
-                $fn_initial = 'S';
-            } elseif ($fi_int == 20) {
-                $fn_initial = 'T';
-            } elseif ($fi_int == 21) {
-                $fn_initial = 'U';
-            } elseif ($fi_int == 22) {
-                $fn_initial = 'V';
-            } elseif ($fi_int == 23) {
-                $fn_initial = 'W';
-            } elseif ($fi_int == 24) {
-                $fn_initial = 'X';
-            } elseif ($fi_int == 25) {
-                $fn_initial = 'Y';
-            } elseif ($fi_int == 26) {
-                $fn_initial = 'Z';
-            }
-
-            if ($li_int == 1) {
-                $ln_initial = 'A';
-            } elseif ($li_int == 2) {
-                $ln_initial = 'B';
-            } elseif ($li_int == 3) {
-                $ln_initial = 'C';
-            } elseif ($li_int == 4) {
-                $ln_initial = 'D';
-            } elseif ($li_int == 5) {
-                $ln_initial = 'E';
-            } elseif ($li_int == 6) {
-                $ln_initial = 'F';
-            } elseif ($li_int == 7) {
-                $ln_initial = 'G';
-            } elseif ($li_int == 8) {
-                $ln_initial = 'H';
-            } elseif ($li_int == 9) {
-                $ln_initial = 'I';
-            } elseif ($li_int == 10) {
-                $ln_initial = 'J';
-            } elseif ($li_int == 11) {
-                $ln_initial = 'K';
-            } elseif ($li_int == 12) {
-                $ln_initial = 'L';
-            } elseif ($li_int == 13) {
-                $ln_initial = 'M';
-            } elseif ($li_int == 14) {
-                $ln_initial = 'N';
-            } elseif ($li_int == 15) {
-                $ln_initial = 'O';
-            } elseif ($li_int == 16) {
-                $ln_initial = 'P';
-            } elseif ($li_int == 17) {
-                $ln_initial = 'Q';
-            } elseif ($li_int == 18) {
-                $ln_initial = 'R';
-            } elseif ($li_int == 19) {
-                $ln_initial = 'S';
-            } elseif ($li_int == 20) {
-                $ln_initial = 'T';
-            } elseif ($li_int == 21) {
-                $ln_initial = 'U';
-            } elseif ($li_int == 22) {
-                $ln_initial = 'V';
-            } elseif ($li_int == 23) {
-                $ln_initial = 'W';
-            } elseif ($li_int == 24) {
-                $ln_initial = 'X';
-            } elseif ($li_int == 25) {
-                $ln_initial = 'Y';
-            } elseif ($li_int == 26) {
-                $ln_initial = 'Z';
-            }
-
-            goto a;
+            $user = false;
         }
 
-        return view('dashboard.admin.roster.new_vis')->with('visitor', $visitor)->with('initials', $initials)->with('fname', $fname)->with('lname', $lname);
+        return view('dashboard.admin.roster.new_vis')->with('visitor', $visitor)->with('initials', $initials)->with('fname', $fname)->with('lname', $lname)->with('user', $user);
     }
-
-    public function manualAddVisitor(Request $request)
-    {
+    
+    public function manualAddVisitor(Request $request) {
         $validator = $request->validate([
             'cid' => 'required'
         ]);
 
-        $dossier = new MemberLog();
-        $dossier->user_target = $request->cid;
-        $dossier->user_submitter = Auth::id();
-        $dossier->content = "Visitor added on " . Carbon::now()->format('m/d/Y') . ".";
-        $dossier->save();
-
         $client = new Client(['exceptions' => false]);
-        $response = $client->request('GET', 'https://api.vatusa.net/v2/user/' . $request->cid . '?apikey=' . Config::get('vatusa.api_key'));
+        $response = $client->request('GET', 'https://api.vatusa.net/v2/user/'.$request->cid.'?apikey='.Config::get('vatusa.api_key'));
         $result = $response->getStatusCode();
         if ($result == '200') {
             $visitor = json_decode($response->getBody());
-
-            $users_inc_v = User::get();
-            $fn_initial = substr($visitor->fname, 0, 1);
-            $ln_initial = substr($visitor->lname, 0, 1);
-
-            a:
-            $initials = $fn_initial . $ln_initial;
-            $yes = 1;
-            foreach ($users_inc_v as $u) {
-                if ($u->initials == $initials) {
-                    $yes = 0;
-                    break;
-                } else {
-                    $yes = 1;
-                }
-            }
-
-            if ($yes === 1) {
-                $initials = $initials;
-            } else {
-                $fi_int = rand(1, 26);
-                $li_int = rand(1, 26);
-
-                if ($fi_int == 1) {
-                    $fn_initial = 'A';
-                } elseif ($fi_int == 2) {
-                    $fn_initial = 'B';
-                } elseif ($fi_int == 3) {
-                    $fn_initial = 'C';
-                } elseif ($fi_int == 4) {
-                    $fn_initial = 'D';
-                } elseif ($fi_int == 5) {
-                    $fn_initial = 'E';
-                } elseif ($fi_int == 6) {
-                    $fn_initial = 'F';
-                } elseif ($fi_int == 7) {
-                    $fn_initial = 'G';
-                } elseif ($fi_int == 8) {
-                    $fn_initial = 'H';
-                } elseif ($fi_int == 9) {
-                    $fn_initial = 'I';
-                } elseif ($fi_int == 10) {
-                    $fn_initial = 'J';
-                } elseif ($fi_int == 11) {
-                    $fn_initial = 'K';
-                } elseif ($fi_int == 12) {
-                    $fn_initial = 'L';
-                } elseif ($fi_int == 13) {
-                    $fn_initial = 'M';
-                } elseif ($fi_int == 14) {
-                    $fn_initial = 'N';
-                } elseif ($fi_int == 15) {
-                    $fn_initial = 'O';
-                } elseif ($fi_int == 16) {
-                    $fn_initial = 'P';
-                } elseif ($fi_int == 17) {
-                    $fn_initial = 'Q';
-                } elseif ($fi_int == 18) {
-                    $fn_initial = 'R';
-                } elseif ($fi_int == 19) {
-                    $fn_initial = 'S';
-                } elseif ($fi_int == 20) {
-                    $fn_initial = 'T';
-                } elseif ($fi_int == 21) {
-                    $fn_initial = 'U';
-                } elseif ($fi_int == 22) {
-                    $fn_initial = 'V';
-                } elseif ($fi_int == 23) {
-                    $fn_initial = 'W';
-                } elseif ($fi_int == 24) {
-                    $fn_initial = 'X';
-                } elseif ($fi_int == 25) {
-                    $fn_initial = 'Y';
-                } elseif ($fi_int == 26) {
-                    $fn_initial = 'Z';
-                }
-
-                if ($li_int == 1) {
-                    $ln_initial = 'A';
-                } elseif ($li_int == 2) {
-                    $ln_initial = 'B';
-                } elseif ($li_int == 3) {
-                    $ln_initial = 'C';
-                } elseif ($li_int == 4) {
-                    $ln_initial = 'D';
-                } elseif ($li_int == 5) {
-                    $ln_initial = 'E';
-                } elseif ($li_int == 6) {
-                    $ln_initial = 'F';
-                } elseif ($li_int == 7) {
-                    $ln_initial = 'G';
-                } elseif ($li_int == 8) {
-                    $ln_initial = 'H';
-                } elseif ($li_int == 9) {
-                    $ln_initial = 'I';
-                } elseif ($li_int == 10) {
-                    $ln_initial = 'J';
-                } elseif ($li_int == 11) {
-                    $ln_initial = 'K';
-                } elseif ($li_int == 12) {
-                    $ln_initial = 'L';
-                } elseif ($li_int == 13) {
-                    $ln_initial = 'M';
-                } elseif ($li_int == 14) {
-                    $ln_initial = 'N';
-                } elseif ($li_int == 15) {
-                    $ln_initial = 'O';
-                } elseif ($li_int == 16) {
-                    $ln_initial = 'P';
-                } elseif ($li_int == 17) {
-                    $ln_initial = 'Q';
-                } elseif ($li_int == 18) {
-                    $ln_initial = 'R';
-                } elseif ($li_int == 19) {
-                    $ln_initial = 'S';
-                } elseif ($li_int == 20) {
-                    $ln_initial = 'T';
-                } elseif ($li_int == 21) {
-                    $ln_initial = 'U';
-                } elseif ($li_int == 22) {
-                    $ln_initial = 'V';
-                } elseif ($li_int == 23) {
-                    $ln_initial = 'W';
-                } elseif ($li_int == 24) {
-                    $ln_initial = 'X';
-                } elseif ($li_int == 25) {
-                    $ln_initial = 'Y';
-                } elseif ($li_int == 26) {
-                    $ln_initial = 'Z';
-                }
-
-                goto a;
-            }
+            $visitor = $visitor->data;
+            $initials = User::generateControllerInitials($visitor->fname, $visitor->lname);
         } else {
             $visitor = null;
             $initials = null;
@@ -895,8 +587,7 @@ class AdminDash extends Controller
         return view('dashboard.admin.roster.manual_vis')->with('visitor', $visitor)->with('initials', $initials);
     }
 
-    public function rejectVisitRequest(Request $request, $id)
-    {
+    public function rejectVisitRequest(Request $request, $id) {
         $validator = $request->validate([
             'reject_reason' => 'required'
         ]);
@@ -907,80 +598,77 @@ class AdminDash extends Controller
         $visitor->save();
 
         Mail::send(['html' => 'emails.visit.reject'], ['visitor' => $visitor], function ($message) use ($visitor) {
-            $message->from('notams@vzdc.org', 'vZDC Visiting Department')->subject('Visitor Request Rejected');
-            $message->to($visitor->email)->cc('datm@vzdc.org')->cc('atm@vzdc.org')->cc('vatusa7@vatusa.net');
+            $message->from('visitors@notams.ztlartcc.org', 'vZTL ARTCC Visiting Department')->subject('Visitor Request Rejected');
+            $message->to($visitor->email)->cc('datm@ztlartcc.org');
         });
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' rejected the visit request for ' . $visitor->name . '.';
+        $audit->what = Auth::user()->full_name.' rejected the visit request for '.$visitor->name.'.';
         $audit->save();
 
         return redirect('/dashboard/admin/roster/visit/requests')->with('success', 'The visit request has been rejected successfully.');
     }
 
-    public function storeVisitor(Request $request)
-    {
-        $userid = Input::get('cid');
-        $id = Input::get('id');
-        if ($id != -1) {
-            $visitor = Visitor::find($id);
-
-            $visitor->updated_by = Auth::id();
-            $visitor->updated_by_name = Auth::user()->full_name;
-            $visitor->status = 1;
-            $visitor->save();
-
-
-            $dossier = new MemberLog();
-            $dossier->user_target = $visitor->id;
-            $dossier->user_submitter = Auth::id();
-            $dossier->content = "Visitor added on " . Carbon::now()->format('m/d/Y') . ".";
-            $dossier->save();
-
-            Mail::send('emails.visit.accept', ['visitor' => $visitor], function ($message) use ($visitor) {
-                $message->from('notams@vzdc.org', 'vZDC Visiting Department')->subject('Visitor Request Accepted');
-                $message->to($visitor->email)->cc('datm@vzdc.org')->cc('atm@vzdc.org')->cc('ta@vzdc.org');
-            });
-        }
-
-        if (User::find($userid) !== null) {
-            $user = User::find($userid);
-            $user->status = 1;
-            $user->save();
-            $audit = new Audit;
-            $audit->cid = Auth::id();
-            $audit->ip = $_SERVER['REMOTE_ADDR'];
-            $audit->what = Auth::user()->full_name . ' added the visitor ' . $user->full_name . '.';
-            $audit->save();
+    public function storeVisitor(Request $request) {
+        // See if a record already exists for this CID (a returning visitor)
+        if (User::find($request->cid) !== null) {
+            $user = User::find($request->cid);
         } else {
             $user = new User;
-            $user->id = Input::get('cid');
-            $user->fname = Input::get('fname');
-            $user->lname = Input::get('lname');
-            $user->email = Input::get('email');
-            $user->initials = Input::get('initials');
-            $user->rating_id = Input::get('rating_id');
-            $user->visitor = '1';
-            $user->visitor_from = Input::get('visitor_from');
-            $user->status = '1';
-            $user->added_to_facility = Carbon::now();
-            $user->save();
-
-            $audit = new Audit;
-            $audit->cid = Auth::id();
-            $audit->ip = $_SERVER['REMOTE_ADDR'];
-            $audit->what = Auth::user()->full_name . ' added the visitor ' . $user->full_name . '.';
-            $audit->save();
         }
+        $user->id = $request->input('cid');
+        $user->fname = $request->input('fname');
+        $user->lname = $request->input('lname');
+        $user->email = $request->input('email');
+        $user->initials = $request->input('initials');
+        $user->rating_id = $request->input('rating_id');
+        if ((User::find($request->input('cid')) !== null)&&($request->input('grant_previous') == '1')) {
+            // Grant all previous certifications that controller held
+        } else { // Otherwise, grant minor certifications based on GRP
+            if ($request->input('rating_id') == 2) {
+                $user->del = 1;
+                $user->gnd = 1;
+                $user->twr = 0;
+                $user->app = 0;
+                $user->ctr = 0;
+            } elseif ($request->input('rating_id') == 3) {
+                $user->del = 1;
+                $user->gnd = 1;
+                $user->twr = 1;
+                $user->app = 0;
+                $user->ctr = 0;
+            } elseif ($request->input('rating_id') == 4 || $request->input('rating_id') == 5 || $request->input('rating_id') == 7 || $request->input('rating_id') == 8 || $request->input('rating_id') == 10) {
+                $user->del = 1;
+                $user->gnd = 1;
+                $user->twr = 1;
+                $user->app = 1;
+                $user->ctr = 0;
+            }
+        }
+        $user->visitor = '1';
+        $user->visitor_from = $request->input('visitor_from');
+        $user->status = '1';
+        $user->added_to_facility = Carbon::now();
+        $user->twr_solo_fields = '';
+        $user->twr_solo_expires = '';
+        $user->save();
 
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' added the visitor '.$user->full_name.'.';
+        $audit->save();
+        
+        // Add to the VATUSA roster
+        $client = new Client();
+        $res = $client->request('POST', 'https://api.vatusa.net/v2/facility/'.Config::get('vatusa.facility').'/roster/manageVisitor/'.$request->input('cid').'?apikey='.Config::get('vatusa.api_key'), ['http_errors' => false]);
 
         return redirect('/dashboard/admin/roster/visit/requests')->with('success', 'The visitor has been successfully added to the roster.');
     }
 
-    public function removeVisitor($id)
-    {
+    public function removeVisitor($id) {
         $user = User::find($id);
         $name = $user->full_name;
         if ($user->visitor == 0) {
@@ -992,42 +680,54 @@ class AdminDash extends Controller
             }
             $user->status = 2;
             $user->save();
+
             $audit = new Audit;
             $audit->cid = Auth::id();
             $audit->ip = $_SERVER['REMOTE_ADDR'];
-            $audit->what = Auth::user()->full_name . ' removed the visitor ' . $name . '.';
+            $audit->what = Auth::user()->full_name.' removed the visitor '.$name.'.';
             $audit->save();
-
+            if (filter_var($user->email, FILTER_VALIDATE_EMAIL)) { // Added this to deal with case when user does not have an email address on file
+                Mail::send('emails.remove_visitor', ['user' => $user], function ($message) use ($user) {
+                    $message->from('info@notams.ztlartcc.org', 'vZTL ARTCC Staff')->subject('Notification of ZTL Roster Removal');
+                    $message->to($user->email)->cc('datm@ztlartcc.org');
+                });
+            }
+            // Remove on the VATUSA roster
+            $client = new Client();
+            $req_params = [ 'form_params' =>
+                [
+                    'reason' => 'IAW ZTL ARTCC Facility Administrative Policy'
+                ],
+                'http_errors' => false
+            ];
+            $res = $client->request('DELETE', 'https://api.vatusa.net/v2/facility/'.Config::get('vatusa.facility').'/roster/manageVisitor/'.$id.'?apikey='.Config::get('vatusa.api_key'), $req_params);
+            
             return redirect('/dashboard/controllers/roster')->with('success', 'The visitor has been removed successfully.');
         }
     }
 
-    public function viewCalendar()
-    {
+    public function viewCalendar() {
         $calendar = Calendar::where('type', '1')->get()->sortByDesc(function ($news) {
-            return strtotime($news->date . ' ' . $news->time);
+            return strtotime($news->date.' '.$news->time);
         });
         $news = Calendar::where('type', '2')->get()->sortByDesc(function ($news) {
-            return strtotime($news->date . ' ' . $news->time);
+            return strtotime($news->date.' '.$news->time);
         });
 
         return view('dashboard.admin.calendar.index')->with('calendar', $calendar)->with('news', $news);
     }
 
-    public function viewCalendarEvent($id)
-    {
+    public function viewCalendarEvent($id) {
         $calendar = Calendar::find($id);
 
         return view('dashboard.admin.calendar.view')->with('calendar', $calendar);
     }
 
-    public function newCalendarEvent()
-    {
+    public function newCalendarEvent() {
         return view('dashboard.admin.calendar.new');
     }
 
-    public function storeCalendarEvent(Request $request)
-    {
+    public function storeCalendarEvent(Request $request) {
         $validator = $request->validate([
             'title' => 'required',
             'date' => 'required',
@@ -1036,33 +736,29 @@ class AdminDash extends Controller
         ]);
 
         $calendar = new Calendar;
-        $calendar->title = Input::get('title');
-        $calendar->date = Input::get('date');
-        $calendar->time = Input::get('time');
-        $calendar->body = Input::get('body');
-        $calendar->type = Input::get('type');
-        $calendar->staff = $request->staff;
+        $calendar->title = $request->input('title');
+        $calendar->date = $request->input('date');
+        $calendar->time = $request->input('time');
+        $calendar->body = $request->input('body');
+        $calendar->type = $request->input('type');
         $calendar->created_by = Auth::id();
         $calendar->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' added a new calendar or news event.';
+        $audit->what = Auth::user()->full_name.' added a new calendar or news event.';
         $audit->save();
 
         return redirect('/dashboard/admin/calendar')->with('success', 'The calendar event or news posting has been created.');
     }
 
-    public function editCalendarEvent($id)
-    {
+    public function editCalendarEvent($id) {
         $calendar = Calendar::find($id);
-
         return view('dashboard.admin.calendar.edit')->with('calendar', $calendar);
     }
 
-    public function saveCalendarEvent(Request $request, $id)
-    {
+    public function saveCalendarEvent(Request $request, $id) {
         $calendar = Calendar::find($id);
 
         $validator = $request->validate([
@@ -1072,26 +768,24 @@ class AdminDash extends Controller
             'type' => 'required'
         ]);
 
-        $calendar->title = Input::get('title');
-        $calendar->date = Input::get('date');
-        $calendar->time = Input::get('time');
-        $calendar->body = Input::get('body');
-        $calendar->type = Input::get('type');
+        $calendar->title = $request->input('title');
+        $calendar->date = $request->input('date');
+        $calendar->time = $request->input('time');
+        $calendar->body = $request->input('body');
+        $calendar->type = $request->input('type');
         $calendar->updated_by = Auth::id();
-        $calendar->staff = $request->staff;
         $calendar->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' edited the calendar event ' . $calendar->title . '.';
+        $audit->what = Auth::user()->full_name.' edited the calendar event '.$calendar->title.'.';
         $audit->save();
 
         return redirect('/dashboard/admin/calendar')->with('success', 'The calendar event or news posting has been edited.');
     }
 
-    public function deleteCalendarEvent($id)
-    {
+    public function deleteCalendarEvent($id) {
         $calendar = Calendar::find($id);
         $title = $calendar->title;
         $calendar->delete();
@@ -1099,19 +793,40 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' removed the calendar event ' . $title . '.';
+        $audit->what = Auth::user()->full_name.' removed the calendar event '.$title.'.';
         $audit->save();
 
         return redirect('/dashboard/admin/calendar')->with('success', 'The calendar event or news posting has been deleted.');
     }
 
-    public function uploadFile()
-    {
+    public function toggleCalenderEventVisibilty($id) {
+        $calendar = Calendar::find($id);
+        $type = '';
+
+        if ($calendar->visible == 1) {
+            $calendar->visible = 0;
+            $type = 'invisible';
+        } elseif ($calendar->visible == 0) {
+            $calendar->visible = 1;
+            $type = 'visible';
+        }
+
+        $calendar->save();
+
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name . ' made ' . $calendar->title . ' ' . $type . '.';
+        $audit->save();
+
+        return redirect('/dashboard/admin/calendar')->with('success', 'Changed ' . $calendar->title . ' to be ' . $type . '!');
+    }
+
+    public function uploadFile() {
         return view('dashboard.admin.files.upload');
     }
 
-    public function storeFile(Request $request)
-    {
+    public function storeFile(Request $request) {
         $validator = $request->validate([
             'title' => 'required',
             'type' => 'required',
@@ -1121,57 +836,135 @@ class AdminDash extends Controller
         $time = Carbon::now()->timestamp;
 
         $ext = $request->file('file')->getClientOriginalExtension();
-        $name = $request->title . '_' . $time . '.' . $ext;
+        $name = preg_replace('/^[\w\-. ]+$/', '', $request->title).'_'.$time.'.'.$ext;
 
         $path = $request->file('file')->storeAs(
             '/public/files',
             $name
         );
 
-        $public_url = '/storage/files/' . $name;
+        $public_url = '/storage/files/'.$name;
+        $permalink = $request->input('permalink');
+        if (strlen($permalink) < 1) {
+            $permalink = null;
+        }
 
         $file = new File;
-        $file->name = Input::get('title');
-        $file->type = Input::get('type');
-        $file->desc = Input::get('desc');
+        $file->name = $request->input('title');
+        $file->type = $request->input('type');
+        $file->desc = $request->input('desc');
         $file->path = $public_url;
+        $file->permalink = $permalink;
         $file->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' created the file ' . $file->name . '.';
+        $audit->what = Auth::user()->full_name.' created the file '.$file->name.'.';
         $audit->save();
 
         return redirect('/dashboard/controllers/files')->with('success', 'The file has been successfully added.');
     }
 
-    public function editFile($id)
-    {
-        $file = File::find($id);
-
-        return view('dashboard.admin.files.edit')->with('file', $file);
-    }
-
-    public function saveFile(Request $request, $id)
-    {
-        $file = File::find($id);
-        $file->name = Input::get('title');
-        $file->type = Input::get('type');
-        $file->desc = Input::get('desc');
+    public function fileSeparator(Request $request) {
+        $file = new File;
+        $file->name = $request->input('title');
+        $file->type = $request->input('type');
+        $file->path = '';
+        $file->row_separator = 1;
         $file->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' updated the file ' . $file->name . '.';
+        $audit->what = Auth::user()->full_name.' created the file separator '.$file->name.'.';
+        $audit->save();
+
+        return redirect('/dashboard/controllers/files')->with('success', 'The file separator has been successfully added.');
+    }
+
+    public function editFile($id) {
+        $file = File::find($id);
+
+        return view('dashboard.admin.files.edit')->with('file', $file);
+    }
+
+    public function saveFile(Request $request, $id) {
+        $permalink = $request->input('permalink');
+        if (strlen($permalink) < 1) {
+            $permalink = null;
+        }
+        $file = File::find($id);
+        $file->name = $request->input('title');
+        $file->type = $request->input('type');
+        $file->desc = $request->input('desc');
+        $file->permalink = $permalink;
+        $file->save();
+
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' updated the file '.$file->name.'.';
         $audit->save();
 
         return redirect('/dashboard/controllers/files')->with('success', 'The file has been edited successfully.');
     }
+    
+    public function updateFileDispOrder(Request $request) {
+        if (($request->act == 'up')&&($request->pos > 0)) { // If action is move up, swap spots with item that = -1
+            $file = File::where('type', $request->typ)->where('disp_order', $request->pos - 1)->first();
+            $file->disp_order = $request->pos;
+            $file->timestamps = false;
+            $file->save();
+            $file = File::find($request->id);
+            $file->disp_order = $request->pos - 1;
+            $file->timestamps = false;
+            $file->save();
+        } elseif ($request->act == 'down') { // If action is move down, then +1 to all elements >= order and update
+            $file = File::where('type', $request->typ)->where('disp_order', $request->pos + 1)->first();
+            if (!is_null($file)) {
+                $file->disp_order = $request->pos;
+                $file->timestamps = false;
+                $file->save();
+                $file = File::find($request->id);
+                $file->disp_order =  $request->pos + 1;
+                $file->timestamps = false;
+                $file->save();
+            }
+        }
+        // Rebuild the display and return it to the AJAX caller
+        $dispString = "";
+        $files = File::where('type', $request->typ)->orderBy('disp_order', 'ASC')->get();
+        foreach ($files as $f) {
+            $dispString .= "<tr>";
+            if ($f->row_separator) {
+                $dispString .= "<th class=\"text-center\" colspan=\"3\">$f->name</th>";
+            } else {
+                $dispString .= "<td>$f->name</td>
+                                <td>$f->desc</td>
+                                <td>$f->updated_at</td>";
+            }
+            $dispString .=     "<td>
+								<div class=\"btn-group\">";
+            if (! $f->row_separator) {
+                $dispString .= "<a href=\"$f->path\" target=\"_blank\" class=\"btn btn-success simple-tooltip\" data-toggle=\"tooltip\" title=\"Download\"><i class=\"fas fa-download\"></i></a>";
+            }
+            $dispString .= "<a href=\"/dashboard/admin/files/edit/$f->id\" class=\"btn btn-warning simple-tooltip\" data-toggle=\"tooltip\" title=\"Edit\"><i class=\"fas fa-pencil-alt\"></i></a>
+                            <a href=\"/dashboard/admin/files/delete/$f->id\" onclick=\"return confirm(\'Are you sure you want to delete " . $f->name . "?\')\" class=\"btn btn-danger simple-tooltip\" data-toggle=\"tooltip\" title=\"Delete\"><i class=\"fas fa-times\"></i></a>";
+            if ($f->disp_order > 0) { // Don't show the up button for the first item listed
+                $dispString .= "<a onclick=\"itemReorder($f->id,$f->disp_order,$f->type,\'up\');\" class=\"btn btn-info simple-tooltip\" data-toggle=\"tooltip\" title=\"Up\"><i class=\"fas fa-arrow-up\"></i></a>";
+            }
+            if (count($files) > $f->disp_order + 1) { // Don't show the down button for the last item listed
+                $dispString .= "<a onclick=\"itemReorder($f->id,$f->disp_order,$f->type,\'down\');\" class=\"btn btn-info simple-tooltip\" data-toggle=\"tooltip\" title=\"Down\"><i class=\"fas fa-arrow-down\"></i></a>";
+            }
+            $dispString .= "	</div>
+								</td>
+                            </tr>";
+        }
+        echo $dispString;
+    }
 
-    public function deleteFile($id)
-    {
+    public function deleteFile($id) {
         $file = File::find($id);
         $file_path = $file->path;
         $file->delete();
@@ -1179,51 +972,63 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' deleted the file ' . $file->name . '.';
+        $audit->what = Auth::user()->full_name.' deleted the file '.$file->name.'.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The file has been deleted successfully.');
     }
 
-    public function showFeedback()
-    {
-        $controllers = User::where('status', 1)->orderBy('lname', 'ASC')->get()->pluck('backwards_name', 'id');
+    public function showFeedback() {
+        $feedbackOptions = User::where('status', 1)->orderBy('lname', 'ASC')->get()->pluck('backwards_name', 'id');
+        $events = Event::all()->pluck('date', 'id');
+        $eventsList = [];
+        foreach ($events as $evId => $event) {
+            $eventDate = Carbon::createFromFormat('m/d/Y', substr($event, 0, 10));
+            if ((Carbon::today() >= $eventDate) && (Carbon::today() <= $eventDate->copy()->addDays(45))) {
+                $eventsList[] = $evId;
+            }
+        }
+        unset($events);
+        $events = Event::whereIn('id', $eventsList)->orderBy('name', 'DESC')->get()->pluck('name', 'id');
+        foreach ($events as $evId => $event) {
+            $feedbackOptions->prepend('Event: ' . $event, $evId);
+        }
+        $feedbackOptions->prepend('General ATC Feedback', '0');
+
         $feedback = Feedback::where('status', 0)->orderBy('created_at', 'ASC')->get();
-        $feedback_p = Feedback::where('status', 1)->orwhere('status', 2)->orderBy('updated_at', 'DSC')->paginate(25);
-        return view('dashboard.admin.feedback')->with('feedback', $feedback)->with('feedback_p', $feedback_p)->with('controllers', $controllers);
+        $feedback_p = Feedback::where('status', 1)->orwhere('status', 2)->orderBy('updated_at', 'DESC')->paginate(25);
+        return view('dashboard.admin.feedback')->with('feedback', $feedback)->with('feedback_p', $feedback_p)->with('feedbackOptions', $feedbackOptions);
     }
 
-    public function saveFeedback(Request $request, $id)
-    {
+    public function saveFeedback(Request $request, $id) {
         $feedback = Feedback::find($id);
-        $feedback->controller_id = $request->controller_id;
+        $feedback->feedback_id = $request->feedback_id;
         $feedback->position = $request->position;
         $feedback->staff_comments = $request->staff_comments;
         $feedback->comments = $request->pilot_comments;
         $feedback->status = 1;
         $feedback->save();
 
-        $controller = User::find($feedback->controller_id);
-
-        Mail::send(['html' => 'emails.new_feedback'], ['feedback' => $feedback, 'controller' => $controller], function ($m) use ($feedback, $controller) {
-            $m->from('notams@vzdc.org', 'vZDC Feedback Department');
-            $m->subject('You Have New Feedback!');
-            $m->to($controller->email);
-        });
-
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' saved feedback ' . $feedback->id . ' for ' . $feedback->controller_name . '.';
+        $audit->what = Auth::user()->full_name.' saved feedback '.$feedback->id.' for '.$feedback->controller_name.'.';
         $audit->save();
 
+        $controller = User::find($feedback->feedback_id);
+        if (isset($controller)) {
+            Mail::send(['html' => 'emails.new_feedback'], ['feedback' => $feedback, 'controller' => $controller], function ($m) use ($feedback, $controller) {
+                $m->from('feedback@notams.ztlartcc.org', 'vZTL ARTCC Feedback Department');
+                $m->subject('You Have New Feedback!');
+                $m->to($controller->email);
+            });
+        }
         return redirect()->back()->with('success', 'The feedback has been saved.');
     }
 
-    public function hideFeedback(Request $request, $id)
-    {
+    public function hideFeedback(Request $request, $id) {
         $feedback = Feedback::find($id);
-        $feedback->controller_id = $request->controller_id;
+        $feedback->feedback_id = $request->feedback_id;
         $feedback->position = $request->position;
         $feedback->staff_comments = $request->staff_comments;
         $feedback->comments = $request->pilot_comments;
@@ -1233,16 +1038,15 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' archived feedback ' . $feedback->id . ' for ' . $feedback->controller_name . '.';
+        $audit->what = Auth::user()->full_name.' archived feedback '.$feedback->id.' for '.$feedback->controller_name.'.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The feedback has been hidden.');
     }
 
-    public function updateFeedback(Request $request, $id)
-    {
+    public function updateFeedback(Request $request, $id) {
         $feedback = Feedback::find($id);
-        $feedback->controller_id = $request->controller_id;
+        $feedback->feedback_id = $request->feedback_id;
         $feedback->position = $request->position;
         $feedback->staff_comments = $request->staff_comments;
         $feedback->comments = $request->pilot_comments;
@@ -1252,14 +1056,13 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' updated feedback ' . $feedback->id . ' for ' . $feedback->controller_name . '.';
+        $audit->what = Auth::user()->full_name.' updated feedback '.$feedback->id.' for '.$feedback->controller_name.'.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The feedback has been updated.');
     }
 
-    public function emailFeedback(Request $request, $id)
-    {
+    public function emailFeedback(Request $request, $id) {
         $validator = $request->validate([
             'email' => 'required',
             'name' => 'required',
@@ -1268,37 +1071,33 @@ class AdminDash extends Controller
         ]);
 
         $feedback = Feedback::find($id);
-        $feedback->contacted = 1;
         $replyTo = $request->email;
         $replyToName = $request->name;
         $subject = $request->subject;
         $body = $request->body;
         $sender = Auth::user();
 
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' emailed the pilot for feedback '.$feedback->id.'.';
+        $audit->save();
+
         Mail::send('emails.feedback_email', ['feedback' => $feedback, 'body' => $body, 'sender' => $sender], function ($m) use ($feedback, $subject, $replyTo, $replyToName) {
-            $m->from('notams@vzdc.org', 'vZDC Feedback Department')->replyTo($replyTo, $replyToName);
+            $m->from('feedback@notams.ztlartcc.org', 'vZTL ARTCC Feedback Department')->replyTo($replyTo, $replyToName);
             $m->subject($subject);
             $m->to($feedback->pilot_email);
         });
 
-        $audit = new Audit;
-        $audit->cid = Auth::id();
-        $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' emailed the pilot for feedback ' . $feedback->id . '.';
-        $audit->save();
-        $feedback->save();
-
         return redirect()->back()->with('success', 'The email has been sent to the pilot successfully.');
     }
 
-    public function sendNewEmail()
-    {
+    public function sendNewEmail() {
         $controllers = User::where('status', 1)->orderBy('lname', 'ASC')->get()->pluck('backwards_name', 'id');
         return view('dashboard.admin.email.send')->with('controllers', $controllers);
     }
 
-    public function sendEmail(Request $request)
-    {
+    public function sendEmail(Request $request) {
         $validator = $request->validate([
             'name' => 'required',
             'reply_to' => 'required',
@@ -1362,36 +1161,43 @@ class AdminDash extends Controller
 
         //Sends to all recipients
         foreach ($emails as $e) {
-            Mail::send(['html' => 'emails.send'], ['sender' => $sender, 'body' => $body], function ($m) use ($name, $subject, $e, $reply_to) {
-                $m->from('notams@vzdc.org', $name)->replyTo($reply_to, $name);
-                $m->subject('[vZDC] ' . $subject);
-                $m->to($e);
-            });
+            if ($e != 'No email') {
+                try {
+                    Mail::send(['html' => 'emails.send'], ['sender' => $sender, 'body' => $body], function ($m) use ($name, $subject, $e, $reply_to) {
+                        $m->from('info@notams.ztlartcc.org', $name)->replyTo($reply_to, $name);
+                        $m->subject('[vZTL ARTCC] '.$subject);
+                        $m->to($e);
+                    });
+                } catch(\Exception $except) {
+                    // If they have a bad email, change it to no email
+                    $bad = User::where('email', $e)->first();
+                    $bad->email = 'No email';
+                    $bad->save();
+                }
+            }
         }
         //Copies to the sender
         Mail::send(['html' => 'emails.send'], ['sender' => $sender, 'body' => $body], function ($m) use ($name, $subject, $sender, $reply_to) {
-            $m->from('notams@vzdc.org', $name)->replyTo($reply_to, $name);
-            $m->subject('[vZDC] ' . $subject);
+            $m->from('info@notams.ztlartcc.org', $name)->replyTo($reply_to, $name);
+            $m->subject('[vZTL ARTCC] '.$subject);
             $m->to($sender->email);
         });
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' sent an email from the send email page.';
+        $audit->what = Auth::user()->full_name.' sent an email from the send email page.';
         $audit->save();
 
         return redirect('/dashboard/admin/email/send')->with('success', 'The email has been sent successfully and a copy has been sent to you as well.');
     }
 
-    public function setAnnouncement()
-    {
+    public function setAnnouncement() {
         $announcement = Announcement::find(1);
         return view('dashboard.admin.announcement')->with('announcement', $announcement);
     }
 
-    public function saveAnnouncement(Request $request)
-    {
+    public function saveAnnouncement(Request $request) {
         $announcement = Announcement::find(1);
         $announcement->body = $request->body;
         $announcement->staff_member = Auth::id();
@@ -1400,38 +1206,77 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' updated the announcement.';
+        $audit->what = Auth::user()->full_name.' updated the announcement.';
         $audit->save();
 
         return redirect('/dashboard/admin/announcement')->with('success', 'The announcement has been updated successfully.');
     }
 
-    public function showBronzeMic($year = null, $month = null)
-    {
-        if ($year == null)
+    public function showBronzeMic($sort = 'bronzesort', $year = null, $month = null) {
+        if ($year == null) {
             $year = date('y');
+        }
 
-        if ($month == null)
+        if ($month == null) {
             $month = date('n');
+        }
 
         $stats = ControllerLog::aggregateAllControllersByPosAndMonth($year, $month);
         $year_stats = ControllerLog::aggregateAllControllersByPosAndYear($year, $month);
         $all_stats = ControllerLog::getAllControllerStats();
 
         $homec = User::where('visitor', 0)->where('status', 1)->get();
-        $visitc = User::where('visitor', 1)->where('status', 1)->get();
         $winner = Bronze::where('month', $month)->where('year', $year)->first();
+        $winner_local = LocalHero::where('month', $month)->where('year', $year)->first();
 
-        $home = $homec->sortByDesc(function ($user) use ($stats) {
-            return $stats[$user->id]->bronze_hrs;
-        });
-        return view('dashboard.admin.bronze-mic')->with('all_stats', $all_stats)->with('year', $year)
-            ->with('month', $month)->with('stats', $stats)->with('year_stats', $year_stats)
-            ->with('home', $home)->with('winner', $winner);
+        if ($sort == 'pyritesort') {
+            $home = $homec->sortByDesc(function ($user) use ($year_stats) {
+                return $year_stats[$user->id]->bronze_hrs;
+            });
+        } else {
+            $home = $homec->sortByDesc(function ($user) use ($stats, $sort) {
+                if ($sort == 'localsort') {
+                    return $stats[$user->id]->local_hero_hrs;
+                }
+                return $stats[$user->id]->bronze_hrs;
+            });
+        }
+        return view('dashboard.admin.bronze-mic')->with('all_stats', $all_stats)->with('year', $year)->with('sort', $sort)
+                                                  ->with('month', $month)->with('stats', $stats)->with('year_stats', $year_stats)
+                                                  ->with('home', $home)->with('winner', $winner)->with('winner_local', $winner_local);
     }
 
-    public function setBronzeWinner(Request $request, $year, $month, $hours, $id)
-    {
+    public function setLocalHeroWinner($year, $month, $hours, $id) {
+        $local_hero = new LocalHero;
+        $local_hero->controller_id = $id;
+        $local_hero->month = $month;
+        $local_hero->year = $year;
+        $local_hero->month_hours = $hours;
+        $local_hero->save();
+
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' set the local hero winner for '.$month.'/'.$year.'.';
+        $audit->save();
+
+        return redirect('/dashboard/admin/bronze-mic/localsort/'.$year.'/'.$month)->with('success', 'The controller has been set as the local hero winner successfully.');
+    }
+
+    public function removeLocalHeroWinner($id, $year, $month) {
+        $local_hero = LocalHero::find($id);
+        $local_hero->delete();
+
+        $audit = new Audit;
+        $audit->cid = Auth::id();
+        $audit->ip = $_SERVER['REMOTE_ADDR'];
+        $audit->what = Auth::user()->full_name.' removed the local hero winner for '.$month.'/'.$year.'.';
+        $audit->save();
+
+        return redirect('/dashboard/admin/bronze-mic/localsort/'.$year.'/'.$month)->with('success', 'The local hero winner has been removed successfully.');
+    }
+
+    public function setBronzeWinner(Request $request, $year, $month, $hours, $id) {
         $bronze = new Bronze;
         $bronze->controller_id = $id;
         $bronze->month = $month;
@@ -1442,48 +1287,45 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' set the bronze mic winner for ' . $month . '/' . $year . '.';
+        $audit->what = Auth::user()->full_name.' set the bronze mic winner for '.$month.'/'.$year.'.';
         $audit->save();
 
-        return redirect('/dashboard/admin/bronze-mic/' . $year . '/' . $month)->with('success', 'The controller has been set as the bronze mic winner successfully.');
+        return redirect('/dashboard/admin/bronze-mic/bronzesort/'.$year.'/'.$month)->with('success', 'The controller has been set as the bronze mic winner successfully.');
     }
 
-    public function removeBronzeWinner($id, $year, $month)
-    {
+    public function removeBronzeWinner($id, $year, $month) {
         $bronze = Bronze::find($id);
         $bronze->delete();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' removed the bronze mic winner for ' . $month . '/' . $year . '.';
+        $audit->what = Auth::user()->full_name.' removed the bronze mic winner for '.$month.'/'.$year.'.';
         $audit->save();
 
-        return redirect('/dashboard/admin/bronze-mic/' . $year . '/' . $month)->with('success', 'The winner has been removed successfully.');
+        return redirect('/dashboard/admin/bronze-mic/bronzesort/'.$year.'/'.$month)->with('success', 'The bronze mic winner has been removed successfully.');
     }
 
-    public function showPyriteMic($year = null)
-    {
-        if ($year == null)
+    public function showPyriteMic($year = null) {
+        if ($year == null) {
             $year = date('y');
+        }
 
         $year_stats = ControllerLog::aggregateAllControllersByPosAndYear($year);
         $all_stats = ControllerLog::getAllControllerStats();
 
         $homec = User::where('visitor', 0)->where('status', 1)->get();
-        $visitc = User::where('visitor', 1)->where('status', 1)->get();
         $winner = Pyrite::where('year', $year)->first();
 
         $home = $homec->sortByDesc(function ($user) use ($year_stats) {
             return $year_stats[$user->id]->bronze_hrs;
         });
         return view('dashboard.admin.pyrite-mic')->with('all_stats', $all_stats)->with('year', $year)
-            ->with('year_stats', $year_stats)
-            ->with('home', $home)->with('winner', $winner);
+                                                  ->with('year_stats', $year_stats)
+                                                  ->with('home', $home)->with('winner', $winner);
     }
 
-    public function setPyriteWinner(Request $request, $year, $hours, $id)
-    {
+    public function setPyriteWinner(Request $request, $year, $hours, $id) {
         $bronze = new Pyrite;
         $bronze->controller_id = $id;
         $bronze->year = $year;
@@ -1493,33 +1335,30 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' set the pyrite mic winner for 20' . $year . '.';
+        $audit->what = Auth::user()->full_name.' set the pyrite mic winner for 20'.$year.'.';
         $audit->save();
 
-        return redirect('/dashboard/admin/pyrite-mic/' . $year)->with('success', 'The controller has been set as the pyrite mic winner successfully.');
+        return redirect('/dashboard/admin/pyrite-mic/'.$year)->with('success', 'The controller has been set as the pyrite mic winner successfully.');
     }
 
-    public function removePyriteWinner($id, $year)
-    {
+    public function removePyriteWinner($id, $year) {
         $bronze = Pyrite::find($id);
         $bronze->delete();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' removed the pyrite mic winner for 20' . $year . '.';
+        $audit->what = Auth::user()->full_name.' removed the pyrite mic winner for 20'.$year.'.';
         $audit->save();
 
-        return redirect('/dashboard/admin/pyrite-mic/' . $year)->with('success', 'The winner has been removed successfully.');
+        return redirect('/dashboard/admin/pyrite-mic/'.$year)->with('success', 'The winner has been removed successfully.');
     }
 
-    public function newEvent()
-    {
+    public function newEvent() {
         return view('dashboard.admin.events.new');
     }
 
-    public function saveNewEvent(Request $request)
-    {
+    public function saveNewEvent(Request $request) {
         $validator = $request->validate([
             'name' => 'required',
             'date' => 'required',
@@ -1533,9 +1372,9 @@ class AdminDash extends Controller
             $time = Carbon::now()->timestamp;
             $path = $request->file('banner')->storeAs(
                 'public/event_banners',
-                $time . '.' . $ext
+                $time.'.'.$ext
             );
-            $public_url = '/storage/event_banners/' . $time . '.' . $ext;
+            $public_url = '/storage/event_banners/'.$time.'.'.$ext;
         } else {
             $public_url = null;
         }
@@ -1548,27 +1387,27 @@ class AdminDash extends Controller
         $event->start_time = $request->start_time;
         $event->end_time = $request->end_time;
         $event->banner_path = $public_url;
+        $event->reduceEventBanner();
         $event->status = 0;
         $event->reg = 0;
+        $event->type = $request->type;
         $event->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' created the event ' . $event->name . '.';
+        $audit->what = Auth::user()->full_name.' created the event '.$event->name.'.';
         $audit->save();
 
-        return redirect('/dashboard/controllers/events/view/' . $event->id)->with('success', 'The event has been created successfully.');
+        return redirect('/dashboard/controllers/events/view/'.$event->id)->with('success', 'The event has been created successfully.');
     }
 
-    public function editEvent($id)
-    {
+    public function editEvent($id) {
         $event = Event::find($id);
         return view('dashboard.admin.events.edit')->with('event', $event);
     }
 
-    public function saveEvent(Request $request, $id)
-    {
+    public function saveEvent(Request $request, $id) {
         $validator = $request->validate([
             'name' => 'required',
             'date' => 'required',
@@ -1579,14 +1418,25 @@ class AdminDash extends Controller
 
         $event = Event::find($id);
 
+        if ($request->type == 1) { // if we are setting it to a verified support event, verify the banner
+            if (starts_with($event->banner_path, "http://") || starts_with($event->banner_path, "https://")) {
+                // download the banner
+                $public_url = '/event_banners/vatsim_'.$event->vatsim_id.substr($event->banner_path, -4);
+                Storage::disk('public')->put($public_url, file_get_contents($event->banner_path));
+                $event->banner_path = $public_url;
+                $event->reduceEventBanner();
+                $event->banner_path = '/storage'.$public_url;
+            }
+        }
+
         if ($request->file('banner') != null) {
             $ext = $request->file('banner')->getClientOriginalExtension();
             $time = Carbon::now()->timestamp;
             $path = $request->file('banner')->storeAs(
                 'public/event_banners',
-                $time . '.' . $ext
+                $time.'.'.$ext
             );
-            $public_url = '/storage/event_banners/' . $time . '.' . $ext;
+            $public_url = '/storage/event_banners/'.$time.'.'.$ext;
         } else {
             $public_url = $event->banner_path;
         }
@@ -1598,19 +1448,21 @@ class AdminDash extends Controller
         $event->start_time = $request->start_time;
         $event->end_time = $request->end_time;
         $event->banner_path = $public_url;
+        $event->reduceEventBanner();
+        $event->status = 0;
+        $event->type = $request->type;
         $event->save();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' edited the event ' . $event->name . '.';
+        $audit->what = Auth::user()->full_name.' edited the event '.$event->name.'.';
         $audit->save();
 
-        return redirect('/dashboard/controllers/events/view/' . $event->id)->with('success', 'The event has been edited successfully.');
+        return redirect('/dashboard/controllers/events/view/'.$event->id)->with('success', 'The event has been edited successfully.');
     }
 
-    public function deleteEvent($id)
-    {
+    public function deleteEvent($id) {
         $event = Event::find($id);
         $name = $event->name;
         $positions = EventPosition::where('event_id', $event->id)->get();
@@ -1628,14 +1480,13 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' deleted the event ' . $name . '.';
+        $audit->what = Auth::user()->full_name.' deleted the event '.$name.'.';
         $audit->save();
 
         return redirect('/dashboard/controllers/events')->with('success', 'The event has been deleted successfully.');
     }
 
-    public function addPosition(Request $request, $id)
-    {
+    public function addPosition(Request $request, $id) {
         $event = Event::find($id);
 
         $position = new EventPosition;
@@ -1646,8 +1497,7 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'The position was added successfully.');
     }
 
-    public function removePosition($id)
-    {
+    public function removePosition($id) {
         $position = EventPosition::find($id);
         $position->delete();
 
@@ -1659,37 +1509,33 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'The position has been removed successfully.');
     }
 
-    public function toggleRegistration($id)
-    {
+    public function toggleRegistration($id): RedirectResponse {
         $event = Event::find($id);
 
-        if ($event->reg == 0) {
-            $event->reg = 1;
-            $event->save();
-
-            $audit = new Audit;
-            $audit->cid = Auth::id();
-            $audit->ip = $_SERVER['REMOTE_ADDR'];
-            $audit->what = Auth::user()->full_name . ' opened registration for the event ' . $event->name . '.';
-            $audit->save();
-        } elseif ($event->reg == 1) {
-            $event->reg = 0;
-            $event->save();
-
-            $audit = new Audit;
-            $audit->cid = Auth::id();
-            $audit->ip = $_SERVER['REMOTE_ADDR'];
-            $audit->what = Auth::user()->full_name . ' closed registration for the event ' . $event->name . '.';
-            $audit->save();
+        if (! $event) {
+            return redirect()->back()->with('error', 'That event does not exist');
         }
 
-        return redirect('/dashboard/controllers/events/view/' . $id)->with('success', 'The registration has been toggle successfully.');
+        $event->toggleRegistration();
+
+        return redirect()->back()->with('success', 'The registration has been toggled successfully.');
     }
 
-    public function assignPosition(Request $request, $id)
-    {
+    public function toggleShowAssignments($id): RedirectResponse {
+        $event = Event::find($id);
+        if (! $event) {
+            return redirect()->back()->with('error', 'That event does not exist');
+        }
+
+        $event->toggleShowAssignments();
+
+        return redirect()->back()->with('success', 'The assignment visibility has been toggled successfully.');
+    }
+
+    public function assignPosition(Request $request, $id) {
         $reg = EventRegistration::find($id);
         $reg->position_id = $request->position;
+        $reg->position_id_detail = $request->position_detail;
         $reg->start_time = $request->start_time;
         $reg->end_time = $request->end_time;
         $reg->status = 1;
@@ -1698,8 +1544,7 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'The position has been assigned successfully.');
     }
 
-    public function unassignPosition($id)
-    {
+    public function unassignPosition($id) {
         $position = EventRegistration::find($id);
         $position->status = 0;
         $position->save();
@@ -1707,8 +1552,7 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'The position assignment has been removed successfully.');
     }
 
-    public function manualAssign(Request $request, $id)
-    {
+    public function manualAssign(Request $request, $id) {
         $validator = $request->validate([
             'controller' => 'required',
             'position' => 'required'
@@ -1718,6 +1562,7 @@ class AdminDash extends Controller
         $reg->event_id = $id;
         $reg->controller_id = $request->controller;
         $reg->position_id = $request->position;
+        $reg->position_id_detail = $request->position_detail;
         $reg->start_time = $request->start_time;
         $reg->end_time = $request->end_time;
         $reg->status = 1;
@@ -1728,8 +1573,7 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'The position has been assigned successfully.');
     }
 
-    public function setEventActive($id)
-    {
+    public function setEventActive($id) {
         $event = Event::find($id);
         $event->status = 1;
         $event->save();
@@ -1737,14 +1581,13 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' set the event ' . $event->name . ' as active.';
+        $audit->what = Auth::user()->full_name.' set the event '.$event->name.' as active.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The event has been unhidden successfully.');
     }
 
-    public function hideEvent($id)
-    {
+    public function hideEvent($id) {
         $event = Event::find($id);
         $event->status = 0;
         $event->save();
@@ -1752,16 +1595,15 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' hid the event ' . $event->name . '.';
+        $audit->what = Auth::user()->full_name.' hid the event '.$event->name.'.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The event has been hidden successfully.');
     }
 
-    public function setEventPositionPreset(Request $request, $id)
-    {
-        $positions = EventPosition::where('event_id', $id)->orderBy('id', 'DSC')->get();
-        $last_preset_position = PresetPosition::orderBy('id', 'DSC')->first()->id;
+    public function setEventPositionPreset(Request $request, $id) {
+        $positions = EventPosition::where('event_id', $id)->orderBy('id', 'DESC')->get();
+        $last_preset_position = PresetPosition::orderBy('id', 'DESC')->first()->id;
         $last = $last_preset_position + 1;
         $preset_positions = $positions->count() + $last_preset_position;
 
@@ -1780,8 +1622,12 @@ class AdminDash extends Controller
         return redirect()->back()->with('success', 'The position preset has been added successfully');
     }
 
-    public function retrievePositionPreset(Request $request, $id)
-    {
+    public function sendEventReminder($id) {
+        Artisan::call('Event:SendEventReminder ' . $id);
+        return redirect()->back()->with('success', 'Event reminder sent');
+    }
+
+    public function retrievePositionPreset(Request $request, $id) {
         $preset = PositionPreset::find($request->p_id);
         $first = $preset->first_position;
         $last = $preset->last_position;
@@ -1797,34 +1643,30 @@ class AdminDash extends Controller
             $position->save();
         }
 
-        return redirect('/dashboard/controllers/events/view/' . $id)->with('success', 'The position preset has been loaded successfully.');
+        return redirect('/dashboard/controllers/events/view/'.$id)->with('success', 'The position preset has been loaded successfully.');
     }
 
-    public function deletePositionPreset(Request $request)
-    {
+    public function deletePositionPreset(Request $request) {
         $preset = PositionPreset::find($request->p_id);
         $preset->delete();
 
         return redirect()->back()->with('success', 'The position preset has been removed successfully.');
     }
 
-    public function incidentReportIndex()
-    {
-        $new_reports = Incident::where('status', 0)->orderBy('created_at', 'DSC')->get();
-        $archive_reports = Incident::where('status', 1)->orderBy('created_at', 'DSC')->paginate(20);
+    public function incidentReportIndex() {
+        $new_reports = Incident::where('status', 0)->orderBy('created_at', 'DESC')->get();
+        $archive_reports = Incident::where('status', 1)->orderBy('created_at', 'DESC')->paginate(20);
 
         return view('dashboard.admin.incident_reports.index')->with('new_reports', $new_reports)->with('archive_reports', $archive_reports);
     }
 
-    public function viewIncidentReport($id)
-    {
+    public function viewIncidentReport($id) {
         $incident = Incident::find($id);
 
         return view('dashboard.admin.incident_reports.view')->with('incident', $incident);
     }
 
-    public function archiveIncident($id)
-    {
+    public function archiveIncident($id) {
         $incident = Incident::find($id);
         $incident->controller_id = null;
         $incident->reporter_id = null;
@@ -1834,272 +1676,58 @@ class AdminDash extends Controller
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' archived incident report ' . $id . '.';
+        $audit->what = Auth::user()->full_name.' archived incident report '.$id.'.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The incident has been reported successfully.');
     }
 
-    public function deleteIncident($id)
-    {
+    public function deleteIncident($id) {
         $incident = Incident::find($id);
         $incident->delete();
 
         $audit = new Audit;
         $audit->cid = Auth::id();
         $audit->ip = $_SERVER['REMOTE_ADDR'];
-        $audit->what = Auth::user()->full_name . ' deleted incident report ' . $id . '.';
+        $audit->what = Auth::user()->full_name.' deleted incident report '.$id.'.';
         $audit->save();
 
         return redirect()->back()->with('success', 'The incident has been deleted successfully.');
     }
 
-    public function showAudits()
-    {
-        $audits = Audit::orderBy('created_at', 'DSC')->paginate(50);
+    public function showAudits() {
+        $audits = Audit::orderBy('created_at', 'DESC')->paginate(50);
         return view('dashboard.admin.audits')->with('audits', $audits);
     }
 
-    public function createLog($id)
-    {
-        if (auth()->user()->getStaffPositionAttribute() > 0 || auth()->user()->getTrainPositionAttribute() > 0) {
-            $log = new MemberLog;
-            $log->user_target = $id;
-            $log->user_submitter = auth()->user()->id;
-            $log->content = request()->get('content');
-            if (request()->has('confidential')) {
-                $log->confidential = 1;
-            }
-            $log->save();
+    public function showFeatureToggles() {
+        $toggles = FeatureToggle::orderBy('created_at', 'desc')->get();
 
-            $controller = User::find($id);
-            $controller_name = $controller->fname . ' ' . $controller->lname;
-            $submitter = User::find(auth()->user()->id);
-            $submitter_name = $submitter->fname . ' ' . $submitter->lname;
-            $content = request()->get('content');
-
-            Mail::send(['html' => 'emails.member_log'], ['controller' => $controller_name, 'submitter' => $submitter_name, 'content' => $content], function ($m) {
-                $m->from('notams@vzdc.org', 'vZDC Website Logging');
-                $m->subject('New Dossier Log Entry');
-                $m->to('srstaff@vzdc.org');
-            });
-            return redirect()->back()->with('success', 'The log has been created successfully.');
-        } else
-            return redirect()->back()->with('error', 'Access Denied.');
+        return view('dashboard.admin.toggles.show')->with('toggles', $toggles);
     }
 
-    public function createLogManual()
-    {
-        if (auth()->user()->getStaffPositionAttribute() <= 3) {
-            try {
-                $id = intval(request()->get('cid'));
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Invalid CID.');
-            }
-
-            $log = new MemberLog;
-            $log->user_target = $id;
-            $log->user_submitter = auth()->user()->id;
-            $log->content = request()->get('content');
-            if (request()->has('confidential')) {
-                $log->confidential = 1;
-            }
-            $log->save();
-
-            $submitter = User::find(auth()->user()->id);
-            $submitter_name = $submitter->fname . ' ' . $submitter->lname;
-            $content = request()->get('content');
-
-            Mail::send(['html' => 'emails.member_log'], ['controller' => $id, 'submitter' => $submitter_name, 'content' => $content], function ($m) {
-                $m->from('notams@vzdc.org', 'vZDC Website Logging');
-                $m->subject('New Manual Dossier Log Entry');
-                $m->to('srstaff@vzdc.org');
-            });
-            return redirect()->back()->with('success', 'The log has been created successfully.');
-        } else {
-            return redirect()->back()->with('error', 'Access Denied.');
-        }
+    public function showCreateFeatureToggle() {
+        return view('dashboard.admin.toggles.create');
     }
 
-    public function createLogUser($cid)
-    {
-        if (auth()->user()->getStaffPositionAttribute() > 0 || auth()->user()->getTrainPositionAttribute() > 0) {
+    public function createFeatureToggle(Request $request) {
+        $request->merge([
+            'toggle_name' => preg_replace('/\s+/', '_', trim($request->input('toggle_name')))
+        ])->validate([
+            'toggle_name' => 'required|unique:feature_toggles'
+        ]);
 
-            $user = User::find($cid);
+        $toggle = new FeatureToggle;
+        $toggle->toggle_name = $request->input('toggle_name');
+        $toggle->toggle_description = $request->input('toggle_description');
+        $toggle->save();
 
-            if ($user == null) {
-                return redirect()->back()->with('error', 'Invalid CID.');
-            }
-
-            $log = new MemberLog;
-            $log->user_target = $cid;
-            $log->user_submitter = auth()->user()->id;
-            $log->content = request()->get('content');
-            if (request()->has('confidential')) {
-                $log->confidential = 1;
-            }
-            $log->save();
-
-            $submitter = User::find(auth()->user()->id);
-            $submitter_name = $submitter->fname . ' ' . $submitter->lname;
-            $content = request()->get('content');
-
-            Mail::send(['html' => 'emails.member_log'], ['controller' => $cid, 'submitter' => $submitter_name, 'content' => $content], function ($m) {
-                $m->from('notams@vzdc.org', 'vZDC Website Logging');
-                $m->subject('New Manual Dossier Log Entry');
-                $m->to('srstaff@vzdc.org');
-            });
-            return redirect('/dashboard/controllers/roster')->with('success', 'The log has been created successfully.');
-        } else {
-            return redirect()->back()->with('error', 'Access Denied.');
-        }
+        return redirect('/dashboard/admin/toggles')->with('success', 'The toggle `' . $toggle->toggle_name . '` has been created');
     }
 
-    public function removeLog($id)
-    {
-        if (auth()->user()->getStaffPositionAttribute() <= 3) {
-            $log = MemberLog::find($id);
-            if ($log != null) {
-                $log->delete();
-                return redirect()->back()->with('success', 'The log has been removed successfully.');
-            } else
-                return redirect()->back()->with('success', 'The removal has failed.');
-        } else
-            return redirect()->back()->with('error', 'Access Denied.');
-    }
+    public function toggleFeatureToggle($toggle_name) {
+        FeatureToggle::toggle($toggle_name);
 
-    public function DossierIndex(Request $request)
-    {
-        $controllers = User::orderBy('lname', 'ASC')->get()->pluck('backwards_name', 'id');
-        if ($request->id != null) {
-            $search_result = User::find($request->id);
-        } else {
-            $search_result = null;
-        }
-        if ($search_result != null) {
-            $tickets_sort = MemberLog::where('user_target', $search_result->id)->get()->sortByDesc(function ($t) {
-                return strtotime($t->date);
-            })->pluck('id');
-            $tickets_order = implode(',', array_fill(0, count($tickets_sort), '?'));
-            $tickets = MemberLog::whereIn('id', $tickets_sort)->orderByRaw("field(id,{$tickets_order})", $tickets_sort)->paginate(25);
-        } else {
-            $tickets = null;
-        }
-
-        return view('dashboard.admin.dossier')->with('controllers', $controllers)->with('search_result', $search_result)->with('tickets', $tickets);
-    }
-
-    public function DossierSearch(Request $request)
-    {
-        $search_result = User::find($request->cid);
-        if ($search_result != null) {
-            return redirect('/dashboard/admin/dossier?id=' . $search_result->id);
-        } else {
-            return redirect()->back()->with('error', 'There is not controller in the DB that exists with this CID.');
-        }
-    }
-
-    public function ShowVariables()
-    {
-        $visitors = Variable::where('name', 'visitors')->first();
-        $currency = Variable::where('name', 'currency')->first();
-        return view('dashboard.admin.variables')->with('visitors', $visitors)->with('currency', $currency);
-    }
-
-    public function UpdateVisitorsVariable(Request $request)
-    {
-        $requestValue = $request->get('visitors');
-        $allow = isset($requestValue) ? 1 : 0;
-        Variable::where('name', 'visitors')->update(['value' => $allow]);
-        return redirect('/dashboard/admin/variables')->with('success', "Visitor applications now " . ($allow == 1 ? "on." : "off."));
-    }
-
-    public function UpdateCurrencyVariable(Request $request)
-    {
-        Variable::where('name', 'currency')->update(['value' => intval($request->get('currency'))]);
-        return redirect('/dashboard/admin/variables')->with('success', "Currency hours updated to " . $request->get('currency'));
-    }
-
-    public function ShowLoas()
-    {
-        $pending = Loa::where('status', 0)->get();
-        $accepted = Loa::where('status', 1)->get();
-        $active = Loa::where('status', 2)->get();
-        $inactive = Loa::where('status', 3)->get();
-        $denied = Loa::where('status', -1)->get();
-        return view("dashboard.admin.loas.index")->with('pending', $pending)->with('accepted', $accepted)->with('active', $active)->with('inactive', $inactive)->with('denied', $denied);
-    }
-
-    public function ViewLoa($id)
-    {
-        $loa = Loa::find($id);
-        return view('dashboard.admin.loas.edit')->with('loa', $loa);
-    }
-
-    public function UpdateLoa(Request $request, $id)
-    {
-        $loa = Loa::find($id);
-        $user = User::find($loa->controller_id);
-        $loa->status = intval($request->status);
-        $loa->save();
-
-        if ($loa->status == -1 && $request->reason == null) {
-            return redirect()->back()->with('error', 'You must supply a reason for LOA denial.');
-        }
-
-        if ($loa->status == -1) {
-            $reason = $request->reason;
-            Mail::send(['html' => 'emails.loas.denied'], ['loa' => $loa, 'reason' => $reason], function ($m) use ($loa) {
-                $m->from('notams@vzdc.org', 'vZDC LOA Center');
-                $m->subject('Your vZDC LOA Has Been Denied');
-                $m->to($loa->controller_email)->cc("staff@vzdc.org");
-            });
-
-            $dossier = new MemberLog();
-            $dossier->user_target = $user->id;
-            $dossier->user_submitter = 0;
-            $dossier->content = "LOA denied";
-            $dossier->confidential = 0;
-            $dossier->save();
-
-            return redirect('/dashboard/admin/loas')->with('success', "LOA request sucessfully denied.");
-        }
-
-        if ($loa->status == 1) {
-            Mail::send(['html' => 'emails.loas.approved'], ['loa' => $loa], function ($m) use ($loa) {
-                $m->from('notams@vzdc.org', 'vZDC LOA Center');
-                $m->subject('Your vZDC LOA Has Been Accepted');
-                $m->to($loa->controller_email)->cc("staff@vzdc.org");
-            });
-
-            $dossier = new MemberLog();
-            $dossier->user_target = $user->id;
-            $dossier->user_submitter = 0;
-            $dossier->content = "LOA accepted";
-            $dossier->confidential = 0;
-            $dossier->save();
-
-            return redirect('/dashboard/admin/loas')->with('success', "LOA request sucessfully approved.");
-        }
-
-        if ($loa->status == 3) {
-            Mail::send(['html' => 'emails.loas.manual'], ['loa' => $loa, 'user' => $user], function ($m) use ($loa) {
-                $m->from('notams@vzdc.org', 'vZDC LOA Center');
-                $m->subject('Your vZDC LOA Has Been Manually Ended');
-                $m->to($loa->controller_email)->cc("staff@vzdc.org");
-            });
-            $user->status = 1;
-            $user->save();
-
-            $dossier = new MemberLog();
-            $dossier->user_target = $user->id;
-            $dossier->user_submitter = 0;
-            $dossier->content = "LOA manually ended";
-            $dossier->confidential = 0;
-            $dossier->save();
-
-            return redirect('/dashboard/admin/loas')->with('success', "LOA request sucessfully approved.");
-        }
-        return redirect('/dashboard/admin/loas')->with('error', "An error has occured, please try again.");
+        return redirect()->back();
     }
 }

@@ -14,10 +14,10 @@ View Training Ticket
 
 <div class="container">
     <a class="btn btn-primary" href="/dashboard/training/tickets?id={{ $ticket->controller_id }}"><i class="fas fa-arrow-left"></i> Back</a>
-    @if(Auth::id() == $ticket->trainer_id || Auth::user()->can('snrStaff'))
+    @if(Auth::id() == $ticket->trainer_id || Auth::user()->isAbleTo('snrStaff'))
         <a class="btn btn-warning" href="/dashboard/training/tickets/edit/{{ $ticket->id }}">Edit Ticket</a>
     @endif
-    @if(Auth::user()->can('snrStaff'))
+    @if(Auth::user()->isAbleTo('snrStaff'))
         <a class="btn btn-danger" href="/dashboard/training/tickets/delete/{{ $ticket->id }}">Delete Ticket</a>
     @endif
     <br><br>
@@ -28,11 +28,9 @@ View Training Ticket
         <div class="card-body">
             <p><b>Trainer Name:</b> {{ $ticket->trainer_name }}</p>
             <p><b>Session Name/Type:</b> {{ $ticket->type_name }} on {{ $ticket->position_name }}</p>
-            <p><b>Session Facility:</b> {{ $ticket->facility_name }}</p>
             <p><b>Session Date:</b> {{ $ticket->date }}</p>
-            <p><b>Start Time:</b> {{ $ticket->start_time }}z</p>
-            <p><b>End Time:</b> {{ $ticket->end_time }}z</p>
-            <p><b>No Show?</b> {{ $ticket->no_show_text }}</p>
+            <p><b>Start Time:</b> {{ $ticket->start_time }} ET</p>
+            <p><b>End Time:</b> {{ $ticket->end_time }} ET</p>
             <p><b>Duration:</b> {{ $ticket->duration }}</p>
             <p><b>Comments:</b></p>
             @if($ticket->comments != null)

@@ -5,20 +5,20 @@
 @endsection
 
 @section('content')
-    <div class="container-fluid" style="background-color:#F0F0F0;">
-        &nbsp;
-        <h2>Send New Email</h2>
-        &nbsp;
-    </div>
-    <br>
-    <div class="container">
-        {!! Form::open(['action' => 'AdminDash@sendEmail']) !!}
+<div class="container-fluid" style="background-color:#F0F0F0;">
+    &nbsp;
+    <h2>Send New Email</h2>
+    &nbsp;
+</div>
+<br>
+<div class="container">
+    {!! Form::open(['action' => 'AdminDash@sendEmail']) !!}
         @csrf
         <div class="row">
             <div class="col-sm-4">
                 <div class="form-group">
                     {!! Form::label('from', 'From') !!}
-                    {!! Form::text('from', 'notams@vzdc.org', ['disabled', 'class' => 'form-control']) !!}
+                    {!! Form::text('from', 'info@notams.ztlartcc.org', ['disabled', 'class' => 'form-control']) !!}
                 </div>
             </div>
             <div class="col-sm-4">
@@ -29,7 +29,7 @@
             </div>
             <div class="col-sm-4">
                 {!! Form::label('reply_to', 'Reply to Email') !!}
-                {!! Form::text('reply_to', null, ['placeholder' => 'ex. youremail@vzdc.org (Required)', 'class' => 'form-control']) !!}
+                {!! Form::text('reply_to', null, ['placeholder' => 'ex. youremail@ztlartcc.org (Required)', 'class' => 'form-control']) !!}
             </div>
         </div>
         <div class="row">
@@ -64,15 +64,10 @@
         </div>
         <div class="form-group">
             {!! Form::label('message', 'Message') !!}
-            {!! Form::textarea('message', null, ['id' => 'article-ckeditor', 'placeholder' => 'Message (Required)', 'class' => 'form-control']) !!}
+            {!! Form::textarea('message', null, ['placeholder' => 'Message (Required)', 'class' => 'form-control text-editor']) !!}
         </div>
         <button class="btn btn-success" type="submit">Send</button>
-        {!! Form::close() !!}
-    </div>
-
-    <script src="/vendor/unisharp/laravel-ckeditor/ckeditor.js"></script>
-    <script>
-        CKEDITOR.replace('article-ckeditor');
-    </script>
+    {!! Form::close() !!}
+</div>
 
 @endsection

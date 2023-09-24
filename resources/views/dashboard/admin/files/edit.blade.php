@@ -1,18 +1,18 @@
 @extends('layouts.dashboard')
 
 @section('title')
-    Upload File
+Upload File
 @endsection
 
 @section('content')
-    <div class="container-fluid" style="background-color:#F0F0F0;">
-        &nbsp;
-        <h2>Upload New File</h2>
-        &nbsp;
-    </div>
-    <br>
-    <div class="container">
-        {!! Form::open(['action' => ['AdminDash@saveFile', $file->id]]) !!}
+<div class="container-fluid" style="background-color:#F0F0F0;">
+    &nbsp;
+    <h2>Edit File</h2>
+    &nbsp;
+</div>
+<br>
+<div class="container">
+    {!! Form::open(['action' => ['AdminDash@saveFile', $file->id]]) !!}
         @csrf
         <div class="form-group">
             <div class="row">
@@ -34,10 +34,16 @@
                 </div>
             </div>
         </div>
-        <div class="form-group">
-            {!! Form::label('desc', 'Description:') !!}
-            {!! Form::textArea('desc', $file->desc, ['class' => 'form-control', 'placeholder' => 'Optional']) !!}
-        </div>
+        @if(! $file->row_separator)
+            <div class="form-group">
+                {!! Form::label('desc', 'Description:') !!}
+                {!! Form::textArea('desc', $file->desc, ['class' => 'form-control', 'placeholder' => 'Optional']) !!}
+            </div>
+            <div class="form-group">
+                {!! Form::label('desc', 'Permalink:') !!}
+                {!! Form::text('permalink', $file->permalink, ['class' => 'form-control', 'placeholder' => 'Optional, no spaces']) !!}
+            </div>
+        @endif
         <div class="row">
             <div class="col-sm-1">
                 <button class="btn btn-success" action="submit">Save</button>
@@ -46,6 +52,6 @@
                 <a class="btn btn-danger" href="/dashboard/controllers/files">Cancel</a>
             </div>
         </div>
-        {!! Form::close() !!}
-    </div>
+    {!! Form::close() !!}
+</div>
 @endsection

@@ -2,6 +2,7 @@
 
 return [
 
-    'recaptcha' => env('GOOGLE_CAPTCHA_SECRET'),
-    
+    'recaptcha' => env('GOOGLE_RECAPTCHA_SECRET'),
+    'api_key' => env('GOOGLE_API_KEY'),
+
 ];
