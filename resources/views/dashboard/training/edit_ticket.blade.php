@@ -40,7 +40,7 @@ Edit Training Ticket
                         0 => 'KIAD',
                         1 => 'KBWI',
                         2 => 'KDCA',
-                        3 => 'KORF',
+                        3 => 'KRDU',
                         4 => 'ZDC'
                     ], $ticket->facility, ['placeholder' => 'Select Facility', 'class' => 'form-control']) !!}
                 </div>
