@@ -126,7 +126,7 @@ class Ots extends Model
         } elseif ($fac == 2) {
             $facility = 'KDCA';
         } elseif ($fac == 3) {
-            $facility = 'KORF';
+            $facility = 'KRDU';
         } elseif ($fac == 4) {
             $facility = 'ZDC';
         }
